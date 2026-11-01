@@ -36,3 +36,6 @@ See https://github.com/nurgeldiserikbay/services/blob/main/docs/adr/0002-global-
 
 ## Overall system diagrams
 Before implementing a feature, inspect the visual overview diagrams and their editable Mermaid sources: https://github.com/nurgeldiserikbay/services/tree/main/docs/diagrams . Business overview, seller-controlled inquiry flow, and technical architecture clarify ownership, permissions, responsibilities, and shared API boundaries. The authoritative domain rules remain the corresponding Markdown specification chapters.
+
+## Owner-approved booking simplification (2026-11-01)
+IMPORTANT PRODUCT OVERRIDE: https://github.com/nurgeldiserikbay/services/blob/main/docs/adr/0003-simple-booking-company-view.md. Marketplace has simple seller-accepted requests, not negotiations. Company-embedded professional views require specialist field allowlist AND company selection, with separate corporate vs independent booking routes and no transfer of profile ownership or reviews. Audit visibility and role changes, protect personal schedule and saved consumer lists; contact clicks must never inflate completed-order or registered-client metrics.
