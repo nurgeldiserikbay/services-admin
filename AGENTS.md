@@ -33,3 +33,6 @@ Use feature branches / PRs in parallel work unless the owner explicitly requests
 
 ## Global local-first discovery
 See https://github.com/nurgeldiserikbay/services/blob/main/docs/adr/0002-global-local-discovery.md and GEO-01..10 in chapter 13. The platform is globally addressable; admin must manage region/country-specific category availability, translations, moderated business locations, service areas and rules without hard-coding Kazakhstan. Seller visibility is not a paid prerequisite and ads are marked. Country regulatory/PII/payment restrictions require explicit review before rollout.
+
+## Overall system diagrams
+Before implementing a feature, inspect the visual overview diagrams and their editable Mermaid sources: https://github.com/nurgeldiserikbay/services/tree/main/docs/diagrams . Business overview, seller-controlled inquiry flow, and technical architecture clarify ownership, permissions, responsibilities, and shared API boundaries. The authoritative domain rules remain the corresponding Markdown specification chapters.
