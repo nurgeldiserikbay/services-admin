@@ -39,3 +39,10 @@ Before implementing a feature, inspect the visual overview diagrams and their ed
 
 ## Owner-approved booking simplification (2026-11-01)
 IMPORTANT PRODUCT OVERRIDE: https://github.com/nurgeldiserikbay/services/blob/main/docs/adr/0003-simple-booking-company-view.md. Marketplace has simple seller-accepted requests, not negotiations. Company-embedded professional views require specialist field allowlist AND company selection, with separate corporate vs independent booking routes and no transfer of profile ownership or reviews. Audit visibility and role changes, protect personal schedule and saved consumer lists; contact clicks must never inflate completed-order or registered-client metrics.
+
+## Product baseline v0.6 — read before feature work
+1. Canonical product blueprint: https://github.com/nurgeldiserikbay/services/blob/main/docs/ru/01-product.md
+2. ACCEPTED vs OPEN decisions: https://github.com/nurgeldiserikbay/services/blob/main/docs/ru/12-roadmap-decisions.md (OPEN-01..14, TECH-01..08)
+3. Implementation gates: https://github.com/nurgeldiserikbay/services/blob/main/docs/ru/22-delivery-roadmap.md
+4. Owner-approved simple requests/company views: https://github.com/nurgeldiserikbay/services/blob/main/docs/adr/0003-simple-booking-company-view.md
+Never implement proposed/open details as certain requirements. Do not claim implementation-ready before contract/UX/security gates. 
