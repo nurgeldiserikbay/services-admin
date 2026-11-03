@@ -6,7 +6,7 @@ const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('admin stays unavailable without authenticated MFA and RBAC',()=>{
  const page=read('src/app/page.tsx');
  assert.match(page,/force-dynamic/);
- assert.doesNotMatch(page,/fetch\(|Authorization|admin_session|/api\/moderation/);
+ assert.doesNotMatch(page,/fetch\(|Authorization|admin_session|\/api\/moderation/);
  assert.match(page,/Restricted workspace/);
 });
 test('admin response blocks indexing, framing and caching',()=>{
