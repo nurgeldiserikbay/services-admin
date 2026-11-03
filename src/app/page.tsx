@@ -1,5 +1,3 @@
-import { unstable_noStore as noStore } from 'next/cache';
-
 export const dynamic = 'force-dynamic';
 
 /**
@@ -8,7 +6,6 @@ export const dynamic = 'force-dynamic';
  * This screen never exposes moderation data or offers a fake login.
  */
 export default function AdminUnavailable() {
-  noStore();
   return <main className="page">
     <section className="panel" role="status">
       <div className="brand">Services <span>Admin</span></div>
