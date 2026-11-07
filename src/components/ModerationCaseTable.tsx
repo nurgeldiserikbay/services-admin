@@ -1,3 +1,4 @@
+import {isSafeModerationCasePage} from '../lib/moderation-page-core.mjs';
 import type {PlatformAction,PlatformRole} from '../lib/platform-permissions';
 import {canDisplayPlatformAction} from '../lib/platform-permissions';
 
@@ -27,7 +28,8 @@ export function ModerationCaseTable({
   now:number;
 }) {
   const t=labels[locale];
-  if(!canDisplayPlatformAction(verifiedClaims,'moderation.read',now))return null;
+  if(!canDisplayPlatformAction(verifiedClaims,'moderation.read',now)||
+    !isSafeModerationCasePage(cases))return null;
   return <section aria-label={locale==='kk'?'Модерация':'Модерация'}>
     <h2>{locale==='kk'?'Модерация істері':'Дела модерации'}</h2>
     {cases.length===0?<p>{t.empty}</p>:
