@@ -31,3 +31,12 @@ test('moderation table cannot render unvalidated incoming pages',()=>{
  assert.match(source,/isSafeModerationCasePage\(cases\)/);
  assert.doesNotMatch(source,/fetch\(|document\.cookie|localStorage/);
 });
+
+test('moderation table localizes state and subject labels without changing backend enum values',()=>{
+ const source=readFileSync(new URL('../src/components/ModerationCaseTable.tsx',import.meta.url),'utf8');
+ assert.match(source,/kindLabels\[locale\]\[c\.subjectKind\]/);
+ assert.match(source,/stateLabels\[locale\]\[c\.state\]/);
+ for(const label of ['Маман','Специалист','Алғашқы қарау','Первичная проверка','Шағым','Апелляция']){
+  assert.ok(source.includes(label),label);
+ }
+});
