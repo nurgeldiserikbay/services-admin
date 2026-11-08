@@ -61,3 +61,18 @@ test('admin transport remains unmounted, server-only and feature-disabled',()=>{
  assert.match(code,/SERVICES_ADMIN_MODERATION_HTTP/);
  assert.doesNotMatch(page,/getModerationCasesForVerifiedAdmin/);
 });
+
+test('transport fails closed when a malformed stream yields a non-byte chunk',async()=>{
+ let cancelled=false;
+ const stream={
+  getReader(){return {
+   async read(){return {done:false,value:'private-data'};},
+   async cancel(){cancelled=true;},
+   releaseLock(){},
+  };},
+ };
+ const response={status:200,headers:new Headers({'content-type':'application/json'}),body:stream};
+ await assert.rejects(fetchTrustedModerationCases({...req,transport:async()=>response}),
+  ModerationTransportUnavailable);
+ assert.equal(cancelled,true);
+});
