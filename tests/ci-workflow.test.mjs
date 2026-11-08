@@ -18,5 +18,5 @@ test('admin CI runs all quality gates with least privilege and bounded runtime',
     previous=index;
   }
   assert.match(workflow,/node-version: '22'/);
-  assert.match(workflow,/pnpm install --no-frozen-lockfile/);
+  assert.match(workflow,/pnpm install --frozen-lockfile/);
 });
