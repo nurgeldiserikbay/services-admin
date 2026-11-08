@@ -23,3 +23,7 @@ Status: implementation pending verification.
 
 ## Dependencies
 Approved backend admin APIs and explicit policy decisions; do not implement UI-only permissions.
+
+## Role vocabulary reconciliation
+
+The currently implemented backend policy in `services-back` accepts only `owner`, `admin`, `operator`, and `auditor`, with resource scopes and a 15-minute MFA freshness window. The richer six-role vocabulary in the canonical Admin operations chapter has no matching backend claims yet. The admin UI therefore mirrors only the implemented backend policy and does not infer extra roles or permissions. Resolve the canonical vocabulary before mounting privileged routes.

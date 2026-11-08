@@ -1,58 +1,50 @@
 /**
- * UI presentation capabilities only. This is never authoritative: the backend
- * MUST validate separate administrator session, MFA, action-specific scope,
- * case assignment and resource permissions on EVERY request.
+ * UI capability hints matching the currently implemented backend role contract.
+ * Never authoritative: the backend validates a separate privileged session,
+ * MFA freshness, action, and exact resource scope on EVERY request.
  *
- * Company owner/admin/operator roles are NOT platform admin roles.
+ * "owner" is a platform owner role, not a company or specialist owner role.
  */
-export const platformRoles=[
-  'PlatformSuperAdmin','ModeratorLead','Moderator','Support','TaxonomyEditor','Auditor',
-] as const;
+export const platformRoles=['owner','admin','operator','auditor'] as const;
 export type PlatformRole=(typeof platformRoles)[number];
 
 export const actions=[
-  'moderation.read','moderation.assign','moderation.decide',
-  'taxonomy.read','taxonomy.manage',
-  'audit.read','users.support.read',
+  'moderation.read','moderation.decide','audit.read',
+  'taxonomy.read','taxonomy.publish',
+  'platform_roles.read','platform_roles.manage',
 ] as const;
 export type PlatformAction=(typeof actions)[number];
 
+const MAX_MFA_AGE_MS=15*60*1000;
 const policy:Record<PlatformRole,readonly PlatformAction[]>={
-  PlatformSuperAdmin:actions,
-  ModeratorLead:['moderation.read','moderation.assign','moderation.decide','audit.read'],
-  Moderator:['moderation.read','moderation.decide'],
-  Support:['moderation.read','users.support.read'],
-  TaxonomyEditor:['taxonomy.read','taxonomy.manage'],
-  Auditor:['audit.read','moderation.read'],
+  owner:actions,
+  admin:['moderation.read','moderation.decide','audit.read','taxonomy.read',
+    'taxonomy.publish','platform_roles.read'],
+  operator:['moderation.read','moderation.decide','taxonomy.read'],
+  auditor:['moderation.read','audit.read','taxonomy.read'],
 };
 
-/**
- * Do not accept roles from request body/query/string cookies. Caller must use
- * server-verified claims only, and backend policies remain independently enforced.
- */
 export function canDisplayPlatformAction(
   verifiedClaims:{role:PlatformRole;sessionExpiresAt:number;mfaVerifiedAt:number|null}|null,
   action:PlatformAction,
   now:number,
 ):boolean{
-  if(!verifiedClaims || !Number.isFinite(now) ||
-     !Number.isFinite(verifiedClaims.sessionExpiresAt) ||
+  if(!verifiedClaims || !Number.isSafeInteger(now) ||
+     !Number.isSafeInteger(verifiedClaims.sessionExpiresAt) ||
      verifiedClaims.sessionExpiresAt<=now ||
+     !Number.isSafeInteger(verifiedClaims.mfaVerifiedAt) ||
      verifiedClaims.mfaVerifiedAt===null ||
-     !Number.isFinite(verifiedClaims.mfaVerifiedAt) ||
      verifiedClaims.mfaVerifiedAt>now ||
+     now-verifiedClaims.mfaVerifiedAt>MAX_MFA_AGE_MS ||
      !platformRoles.includes(verifiedClaims.role) ||
      !actions.includes(action))return false;
   return policy[verifiedClaims.role].includes(action);
 }
 
 export type ModerationCaseState='triage'|'in_review'|'decision'|'appeal'|'closed';
-export type ModerationAction='assign'|'decide'|'appeal'|'close';
+/** Only decision has a reviewed operation in the implemented backend contract. */
+export type ModerationAction='decide';
 
-/**
- * UX preflight for a moderator case action; NOT a substitute for the backend
- * transition, audit log, second-level independent reviewer and case lock.
- */
 export function canDisplayCaseAction(
   ctx:{role:PlatformRole;sessionExpiresAt:number;mfaVerifiedAt:number|null}|null,
   state:ModerationCaseState,
@@ -60,14 +52,7 @@ export function canDisplayCaseAction(
   reason:string,
   now:number,
 ):boolean{
-  if(!reason.trim() || reason.trim().length>2000)return false;
-  if(operation==='assign')return state==='triage' &&
-    canDisplayPlatformAction(ctx,'moderation.assign',now);
-  if(operation==='decide')return state==='in_review' &&
+  if(typeof reason!=='string'||!reason.trim()||reason.trim().length>2000)return false;
+  return operation==='decide'&&state==='in_review'&&
     canDisplayPlatformAction(ctx,'moderation.decide',now);
-  if(operation==='appeal')return state==='decision' &&
-    canDisplayPlatformAction(ctx,'moderation.read',now);
-  if(operation==='close')return state==='decision' &&
-    canDisplayPlatformAction(ctx,'moderation.decide',now);
-  return false;
 }
