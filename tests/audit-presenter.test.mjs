@@ -16,3 +16,11 @@ test('audit table is read-only and not mounted without real ACL',()=>{
  assert.doesNotMatch(code,/fetch\(|localStorage|window\.location|onClick|contentEditable/);
  assert.doesNotMatch(read('app/page.tsx'),/<AdminAuditTable/);
 });
+
+test('audit page rejects duplicate record identifiers regardless of UUID casing',()=>{
+ const code=read('lib/audit-presentation.ts');
+ assert.match(code,/const seenIds=new Set<string>\(\)/);
+ assert.match(code,/seenIds\.has\(id\)/);
+ assert.match(code,/seenIds\.add\(id\)/);
+ assert.match(code,/e\.id\.toLowerCase\(\)/);
+});
