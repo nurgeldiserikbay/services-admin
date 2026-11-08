@@ -59,6 +59,7 @@ export function isSafeAuditPage(
 ):boolean{
   if(!Array.isArray(entries)||!Number.isInteger(maxPageSize)||
     maxPageSize<1||maxPageSize>50||entries.length>maxPageSize)return false;
+  const seenIds=new Set<string>();
   return entries.every(value=>{
     if(value===null||typeof value!=='object'||Array.isArray(value))return false;
     const e=value as Record<string,unknown>;
@@ -73,7 +74,11 @@ export function isSafeAuditPage(
     if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(e.occurredAt)||
       !Number.isFinite(Date.parse(e.occurredAt))||
       !isValidUtcCalendarTime(e.occurredAt))return false;
-    return e.reasonCode===null||
-      (typeof e.reasonCode==='string'&&REASON.test(e.reasonCode));
+    if(!(e.reasonCode===null||
+      (typeof e.reasonCode==='string'&&REASON.test(e.reasonCode))))return false;
+    const id=e.id.toLowerCase();
+    if(seenIds.has(id))return false;
+    seenIds.add(id);
+    return true;
   });
 }
