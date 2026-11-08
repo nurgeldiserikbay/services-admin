@@ -9,6 +9,15 @@ export type PublicModerationCaseSummary={
   createdAt:string;
 };
 
+const kindLabels={
+  kk:{professional:'Маман',organization:'Компания',review:'Пікір',affiliation:'Байланыс'},
+  ru:{professional:'Специалист',organization:'Компания',review:'Отзыв',affiliation:'Связь'},
+} as const;
+const stateLabels={
+  kk:{triage:'Алғашқы қарау',in_review:'Қаралуда',decision:'Шешім',appeal:'Шағым',closed:'Жабық'},
+  ru:{triage:'Первичная проверка',in_review:'На рассмотрении',decision:'Решение',appeal:'Апелляция',closed:'Закрыто'},
+} as const;
+
 const labels={
   kk:{caseId:'Іс нөмірі',type:'Нысан',state:'Күйі',created:'Құрылған',empty:'Көрсетілетін іс жоқ'},
   ru:{caseId:'Номер дела',type:'Объект',state:'Статус',created:'Создано',empty:'Нет доступных дел'},
@@ -37,7 +46,7 @@ export function ModerationCaseTable({
         <thead><tr><th scope="col">{t.caseId}</th><th scope="col">{t.type}</th>
           <th scope="col">{t.state}</th><th scope="col">{t.created}</th></tr></thead>
         <tbody>{cases.map(c=><tr key={c.id}>
-          <td>{c.id}</td><td>{c.subjectKind}</td><td>{c.state}</td>
+          <td>{c.id}</td><td>{kindLabels[locale][c.subjectKind]}</td><td>{stateLabels[locale][c.state]}</td>
           <td><time dateTime={c.createdAt}>{c.createdAt.slice(0,10)}</time></td>
         </tr>)}</tbody>
       </table>}
