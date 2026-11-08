@@ -14,3 +14,10 @@ test('triage filters are not public moderation authorization',()=>{
  assert.doesNotMatch(source,/fetch\(|window\.location|document\.cookie|onSubmit/);
  assert.doesNotMatch(read('app/page.tsx'),/<ModerationTriageFilters/);
 });
+
+test('moderation filtering and counts require validated server pages',()=>{
+ const source=read('lib/moderation-triage.ts');
+ assert.match(source,/isSafeModerationCasePage\(data\)/);
+ assert.match(source,/isSafeModerationCasePage\(items\)/);
+ assert.match(source,/invalid_moderation_page/);
+});
