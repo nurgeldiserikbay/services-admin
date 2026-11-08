@@ -46,6 +46,7 @@ export async function fetchTrustedModerationCases({
    while(true){
     const part=await reader.read();
     if(part.done){finished=true;break;}
+    if(!(part.value instanceof Uint8Array))throw new ModerationTransportUnavailable();
     bytes+=part.value.byteLength;
     if(bytes>MAX_BYTES)throw new ModerationTransportUnavailable();
     chunks.push(part.value);
