@@ -39,3 +39,18 @@ Also test stale MFA, disabled staff, revoked session, cross-tenant resource IDs,
 - [Admin CI run 42629947514](https://github.com/nurgeldiserikbay/services-admin/actions/runs/42629947514) passed for commit `c08a0b09b89d97c86be3cb6409ec7c21ea1d5050`.
 - The production dependency audit now writes `pnpm-audit.json` and archives it for 14 days, including on failure. Audit failure still fails the CI job; lockfile, typecheck, tests and build remain mandatory.
 - This verifies repository build/test gates only. It **does not** validate staging MFA delivery, real privileged HTTP transactions, live integration with backend, or production rollout. The admin UI remains default off until A1–A4 evidence is collected.
+
+## A5 — privileged token parity (2026-11-09)
+
+The backend issues a 32-byte, unpadded base64url platform-admin session proof.
+Admin server-only moderation transport now rejects noncanonical final characters
+before any outbound HTTP request, using the same 43-character canonical alphabet
+constraint as the backend token validator. This is input validation only;
+revocation, current MFA, grants and resource authorization remain exclusively
+backend responsibilities. Browser cookies, ordinary user tokens and guest
+capabilities must not be substituted for this proof.
+
+Evidence:
+- Admin regression test: `tests/moderation-private-transport.test.mjs` rejects malformed/aliased session proofs without calling transport.
+- Backend contract: `src/modules/admin/admin-session-token.ts` and `test/admin-moderation-access-gates.test.ts` reject malformed privileged bearer values before DB access.
+- Backend still defaults `SERVICES_ENABLE_PLATFORM_MODERATION_HTTP` off; Admin transport remains unmounted by default. This does **not** satisfy real MFA enrollment or privileged staging E2E gates.
