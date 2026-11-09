@@ -22,11 +22,12 @@ function validUtcTimestamp(text){
  * This schema check protects rendering; it never grants data access.
  */
 export function isSafeModerationCasePage(value,maxPageSize=50){
- if(!Array.isArray(value)||!Number.isInteger(maxPageSize)||
+ if(!Array.isArray(value)||!Number.isSafeInteger(maxPageSize)||
   maxPageSize<1||maxPageSize>50||value.length>maxPageSize)return false;
  const seen=new Set();
  return value.every(item=>{
   if(!item||typeof item!=='object'||Array.isArray(item)||
+   Object.getPrototypeOf(item)!==Object.prototype||
    Object.keys(item).length!==KEYS.length||
    !KEYS.every(key=>Object.hasOwn(item,key))||
    typeof item.id!=='string'||!UUID.test(item.id)||
