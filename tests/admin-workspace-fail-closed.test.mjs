@@ -15,11 +15,14 @@ test('admin entry remains fail-closed until authenticated RBAC is implemented',(
 const nextConfig=readFileSync(new URL('../next.config.ts',import.meta.url),'utf8');
 test('admin HTTP responses remain private and unindexable',()=>{
   for(const header of ['Cache-Control','X-Robots-Tag','X-Frame-Options',
-    'X-Content-Type-Options','Content-Security-Policy','Referrer-Policy']){
+    'X-Content-Type-Options','Content-Security-Policy','Referrer-Policy',
+    'Cross-Origin-Opener-Policy','Cross-Origin-Resource-Policy']){
     assert.ok(nextConfig.includes(header),`Missing admin response header: ${header}`);
   }
   assert.match(nextConfig,/Cache-Control['"],\s*value:\s*['"]no-store['"]/);
   assert.match(nextConfig,/frame-ancestors 'none'/);
   assert.match(nextConfig,/form-action 'none'/);
   assert.match(nextConfig,/object-src 'none'/);
+  assert.match(nextConfig,/Cross-Origin-Opener-Policy['"],\s*value:\s*['"]same-origin['"]/);
+  assert.match(nextConfig,/Cross-Origin-Resource-Policy['"],\s*value:\s*['"]same-origin['"]/);
 });
