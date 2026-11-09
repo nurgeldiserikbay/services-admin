@@ -18,6 +18,13 @@ The repository contains **reusable, currently unmounted presentation components*
 
 These are UI building blocks, **not evidence of an operational administration system**. They are deliberately unmounted. Dedicated admin authentication/MFA, scoped backend APIs, persistent audit events and authorized moderation operations are not verified. The current implementation must not be described as production ready.
 
+## Operational endpoints and limitations
+
+- `GET /api/health` returns only a minimal liveness response with `Cache-Control: no-store`.
+- `HEAD /api/health` returns HTTP 200 without a response body for load-balancer probes.
+- The endpoint **does not** check PostgreSQL, Redis, privileged sessions, MFA or backend dependencies; it is not a readiness or authorization signal.
+- Unknown routes return a neutral not-found page. Neither this page nor the liveness endpoint grants access to administrative data.
+
 ## Stage 3 acceptance gates
 
 See [Admin MVP security acceptance](docs/admin-mvp-security-acceptance.md). Before mounting privileged screens or releasing:
