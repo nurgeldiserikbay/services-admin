@@ -1,6 +1,8 @@
 import {isSafeModerationCasePage} from './moderation-page-core.mjs';
 
-const TOKEN=/^[A-Za-z0-9_-]{43}$/;
+// Canonical 32-byte base64url admin token; aligned with backend admin-session-token.ts.
+// The final character contains only four significant bits and cannot be arbitrary.
+const TOKEN=/^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/;
 const MAX_BYTES=16384;
 export class ModerationTransportUnavailable extends Error{
  constructor(){super('Moderation list unavailable');}
