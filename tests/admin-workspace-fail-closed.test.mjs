@@ -41,3 +41,10 @@ test('liveness endpoint does not disclose admin state or infrastructure',()=>{
  assert.match(route,/Cache-Control':'no-store'/);
  assert.doesNotMatch(route,/process\.env|DATABASE_URL|REDIS_URL|authorization|fetch\s*\(/i);
 });
+
+test('HEAD health probes have no body and disable caching',()=>{
+ const route=readFileSync(new URL('../src/app/api/health/route.ts',import.meta.url),'utf8');
+ assert.match(route,/export function HEAD\(\)/);
+ assert.match(route,/new Response\(null,\{status:200,headers:/);
+ assert.match(route,/Cache-Control':'no-store'/);
+});
