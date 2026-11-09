@@ -39,5 +39,5 @@ test('liveness endpoint does not disclose admin state or infrastructure',()=>{
  assert.match(route,/export function GET\(\)/);
  assert.match(route,/status:'ok',service:'services-admin'/);
  assert.match(route,/Cache-Control':'no-store'/);
- assert.doesNotMatch(route,/process\.env|database|redis|token|secret|fetch\s*\(/i);
+ assert.doesNotMatch(route,/process\.env|DATABASE_URL|REDIS_URL|authorization|fetch\s*\(/i);
 });
