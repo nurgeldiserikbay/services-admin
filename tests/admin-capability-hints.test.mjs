@@ -8,7 +8,9 @@ test('presentation hints are limited to explicit read capabilities',()=>{
   assert.equal(hasAdminPresentationHint('operator','moderation.read'),true);
   assert.equal(hasAdminPresentationHint('operator','audit.read'),false);
   assert.equal(hasAdminPresentationHint('auditor','audit.read'),true);
-  assert.equal(hasAdminPresentationHint('auditor','moderation.read'),false);
+  assert.equal(hasAdminPresentationHint('auditor','moderation.read'),true);
+  assert.equal(hasAdminPresentationHint('auditor','taxonomy.read'),true);
+  assert.equal(hasAdminPresentationHint('auditor','moderation.decide'),false);
   for(const role of ['owner','admin','operator','auditor']){
     for(const action of ['moderation.write','roles.grant','audit.delete','taxonomy.publish'])
       assert.equal(hasAdminPresentationHint(role,action),false);
