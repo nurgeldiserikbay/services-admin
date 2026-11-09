@@ -11,7 +11,7 @@ const req={apiBaseUrl:'https://api.example.test/v1',bearer};
 const item=()=>({id:randomUUID(),subjectKind:'review',state:'triage',
  createdAt:'2026-11-08T00:00:00Z'});
 const reply=(data)=>new Response(JSON.stringify(data),{
- status:200,headers:{'content-type':'application/json'},
+ status:200,headers:{'content-type':'application/json','cache-control':'private, no-store, max-age=0'},
 });
 test('transport sends bearer only server-to-server and accepts exact redacted pages',async()=>{
  let seen;
@@ -64,6 +64,18 @@ test('transport fails closed on unredacted, malformed, large and denied response
   await assert.rejects(fetchTrustedModerationCases({...req,transport:async()=>response}),
    ModerationTransportUnavailable);
  }
+});
+test('transport rejects cacheable privileged responses even with otherwise valid JSON',async()=>{
+ let calls=0;
+ for(const cacheControl of [null,'public, max-age=60','private','no-cache','no-store-please']){
+  const headers={'content-type':'application/json'};
+  if(cacheControl!==null)headers['cache-control']=cacheControl;
+  const response=new Response(JSON.stringify({items:[item()]}),{status:200,headers});
+  await assert.rejects(fetchTrustedModerationCases({...req,transport:async()=>{
+   calls++;return response;
+  }}),ModerationTransportUnavailable);
+ }
+ assert.equal(calls,5);
 });
 test('admin transport remains unmounted, server-only and feature-disabled',()=>{
  const code=readFileSync(new URL('../src/lib/moderation-api.server.ts',import.meta.url),'utf8');
