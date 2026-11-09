@@ -33,3 +33,11 @@ test('unknown admin routes do not expose navigation or backend data',()=>{
  assert.doesNotMatch(notFound,/fetch\s*\(|dangerouslySetInnerHTML|localStorage|sessionStorage/);
  assert.doesNotMatch(notFound,/href\s*=|onClick\s*=/);
 });
+
+test('liveness endpoint does not disclose admin state or infrastructure',()=>{
+ const route=readFileSync(new URL('../src/app/api/health/route.ts',import.meta.url),'utf8');
+ assert.match(route,/export function GET\(\)/);
+ assert.match(route,/status:'ok',service:'services-admin'/);
+ assert.match(route,/Cache-Control':'no-store'/);
+ assert.doesNotMatch(route,/process\.env|database|redis|token|secret|fetch\s*\(/i);
+});
