@@ -67,3 +67,10 @@ Backend CI [run 42643340907](https://github.com/nurgeldiserikbay/services-back/a
 - `test/admin-moderation-http-postgres-e2e.test.ts` exercises the real NestJS HTTP route and real PostgreSQL-backed admin sessions, grants and moderation-case queries in one acceptance path. Cases cover an authorized auditor, out-of-scope filtering, anonymous/wrong credentials, expired MFA freshness, revocation and redacted/no-store responses.
 - Fixtures are inserted into one rollback-only PostgreSQL transaction and the NestJS DB adapter is made to use that same connection during the test; no test admin data is committed.
 - This supersedes the A6 limitation for the **Backend HTTP + PostgreSQL read path** only. There is still no verified deployed Admin Next.js ↔ Backend staging journey, real MFA enrollment/recovery, privileged login provisioning, trusted ingress allowlisting, operational alerts or rollback exercise. Do not enable `SERVICES_ADMIN_MODERATION_HTTP` or `SERVICES_ENABLE_PLATFORM_MODERATION_HTTP` in production on CI evidence alone.
+
+## A8 — malformed admin session query fail-closed evidence (2026-11-09)
+
+- [Backend CI run 42655722090](https://github.com/nurgeldiserikbay/services-back/actions/runs/42655722090) passed at backend commit `321bb1a523c5194d2d20cc9a34eaebacc4d2f32c`.
+- `src/modules/admin/admin-session-resolver.ts` rejects malformed PostgreSQL driver responses without treating them as valid scopes or raising an accidental property-access error.
+- Unit coverage in `test/admin-session-row-integrity.test.ts` and live Nest HTTP-boundary coverage in `test/admin-moderation-live-http-permissions.test.ts` verify fail-closed behavior (HTTP 401 for malformed session result).
+- This is not evidence of operational MFA enrollment, staging connectivity, deployment hardening or admin UI release acceptance. Moderation routes remain default off.
