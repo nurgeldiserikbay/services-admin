@@ -30,11 +30,13 @@ export function canDisplayPlatformAction(
   now:number,
 ):boolean{
   if(!verifiedClaims || typeof verifiedClaims!=='object' ||
-     !Number.isSafeInteger(now) ||
+     !Number.isSafeInteger(now) || now<0 ||
      !Number.isSafeInteger(verifiedClaims.sessionExpiresAt) ||
+     verifiedClaims.sessionExpiresAt<0 ||
      verifiedClaims.sessionExpiresAt<=now ||
      !Number.isSafeInteger(verifiedClaims.mfaVerifiedAt) ||
      verifiedClaims.mfaVerifiedAt===null ||
+     verifiedClaims.mfaVerifiedAt<0 ||
      verifiedClaims.mfaVerifiedAt>now ||
      now-verifiedClaims.mfaVerifiedAt>MAX_MFA_AGE_MS ||
      typeof verifiedClaims.role!=='string' ||
