@@ -74,3 +74,10 @@ Backend CI [run 42643340907](https://github.com/nurgeldiserikbay/services-back/a
 - `src/modules/admin/admin-session-resolver.ts` rejects malformed PostgreSQL driver responses without treating them as valid scopes or raising an accidental property-access error.
 - Unit coverage in `test/admin-session-row-integrity.test.ts` and live Nest HTTP-boundary coverage in `test/admin-moderation-live-http-permissions.test.ts` verify fail-closed behavior (HTTP 401 for malformed session result).
 - This is not evidence of operational MFA enrollment, staging connectivity, deployment hardening or admin UI release acceptance. Moderation routes remain default off.
+
+## A9 — privileged response cache-policy parity (2026-11-09)
+
+- [Admin CI run 42657050558](https://github.com/nurgeldiserikbay/services-admin/actions/runs/42657050558) passed at commit `ab4b30ec840a4933550d3f826629c456162c1638`.
+- The server-only moderation transport rejects a 200 JSON response unless the backend explicitly supplies the `no-store` Cache-Control directive. An upstream CDN/proxy misconfiguration must not silently relax the private data contract.
+- `tests/moderation-private-transport.test.mjs` covers absent, misleading and cacheable policies, plus existing streaming, UTF-8, content-type and schema checks. The Backend moderation HTTP tests also assert its `private, no-store` response header.
+- This gate does not make HTTP transport safe across untrusted networks by itself. Backend address allowlisting, private session storage, MFA provisioning/recovery, UI-to-Backend staging E2E and operational release approval remain outstanding. Leave the Admin feature default off.
