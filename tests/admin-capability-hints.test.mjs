@@ -23,3 +23,8 @@ test('unknown and prototype-shaped roles fail closed',()=>{
     assert.equal(hasAdminPresentationHint('owner',capability),false);
   }
 });
+
+test('oversized untrusted capability hints fail closed',()=>{
+  assert.equal(hasAdminPresentationHint('owner'.repeat(10000),'audit.read'),false);
+  assert.equal(hasAdminPresentationHint('owner','audit.read'.repeat(10000)),false);
+});
