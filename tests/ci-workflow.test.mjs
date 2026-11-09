@@ -19,4 +19,9 @@ test('admin CI runs all quality gates with least privilege and bounded runtime',
   }
   assert.match(workflow,/node-version: '22'/);
   assert.match(workflow,/pnpm install --frozen-lockfile/);
+  assert.match(workflow,/pnpm audit --prod --audit-level high --json > pnpm-audit\.json/);
+  assert.match(workflow,/name: Archive production dependency audit evidence\n\s+if: \$\{\{ always\(\) \}\}\n\s+uses: actions\/upload-artifact@v4/);
+  assert.match(workflow,/name: admin-production-pnpm-audit\n\s+path: pnpm-audit\.json/);
+  assert.doesNotMatch(workflow,/pnpm audit[^\n]*(?:\|\| true|continue-on-error)/);
+
 });
