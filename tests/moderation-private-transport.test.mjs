@@ -76,3 +76,26 @@ test('transport fails closed when a malformed stream yields a non-byte chunk',as
   ModerationTransportUnavailable);
  assert.equal(cancelled,true);
 });
+
+test('transport cancels oversized streaming responses without exposing content',async()=>{
+ let cancelled=false;
+ const stream={
+  getReader(){let reads=0;return {
+   async read(){reads++;return {done:false,value:new Uint8Array(reads===1?8192:8193)};},
+   async cancel(){cancelled=true;},
+   releaseLock(){},
+  };},
+ };
+ const response={status:200,headers:new Headers({'content-type':'application/json'}),body:stream};
+ await assert.rejects(fetchTrustedModerationCases({...req,transport:async()=>response}),
+  ModerationTransportUnavailable);
+ assert.equal(cancelled,true);
+});
+
+test('transport rejects invalid UTF-8 response bytes',async()=>{
+ const response=new Response(new Uint8Array([0xff,0xfe]),{
+  status:200,headers:{'content-type':'application/json'},
+ });
+ await assert.rejects(fetchTrustedModerationCases({...req,transport:async()=>response}),
+  ModerationTransportUnavailable);
+});
