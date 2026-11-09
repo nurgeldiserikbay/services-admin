@@ -16,6 +16,8 @@ The repository contains **reusable, currently unmounted presentation components*
 - `src/components/AdminAuditTable.tsx` and `src/lib/audit-presentation.ts`: safe read-only audit table presentation for already server-authorized, redacted entries, bounded to 50 per page. See [audit presentation constraints](docs/audit-presentation.md).
 - Unit regression tests exist at `tests/moderation-triage.test.mjs` and `tests/audit-presenter.test.mjs`.
 
+- `src/lib/admin-capability-hints.mjs`: conservative, read-only UI presentation hints for the four implemented backend role names. All write hints are denied; these hints are **not authorization**, are not mounted, and must never be used as an API access gate. Runtime tests: `tests/admin-capability-hints.test.mjs`.
+
 These are UI building blocks, **not evidence of an operational administration system**. They are deliberately unmounted. Dedicated admin authentication/MFA, scoped backend APIs, persistent audit events and authorized moderation operations are not verified. The current implementation must not be described as production ready.
 
 ## Operational endpoints and limitations
