@@ -38,6 +38,11 @@ export async function fetchTrustedModerationCases({
   if(response.status!==200||
    !/^application\/json(?:\s*;|\s*$)/i.test(response.headers.get('content-type')??''))
    throw new ModerationTransportUnavailable();
+  // A privileged response must never be cacheable, even by a misconfigured
+  // upstream CDN or reverse proxy. Require the backend's no-store contract.
+  const directives=(response.headers.get('cache-control')??'')
+   .split(',').map(value=>value.trim().toLowerCase());
+  if(!directives.includes('no-store'))throw new ModerationTransportUnavailable();
   const len=response.headers.get('content-length');
   if(len!==null&&(!/^\d+$/.test(len)||Number(len)>MAX_BYTES))
    throw new ModerationTransportUnavailable();
