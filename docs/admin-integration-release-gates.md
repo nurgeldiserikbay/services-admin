@@ -54,3 +54,9 @@ Evidence:
 - Admin regression test: `tests/moderation-private-transport.test.mjs` rejects malformed/aliased session proofs without calling transport.
 - Backend contract: `src/modules/admin/admin-session-token.ts` and `test/admin-moderation-access-gates.test.ts` reject malformed privileged bearer values before DB access.
 - Backend still defaults `SERVICES_ENABLE_PLATFORM_MODERATION_HTTP` off; Admin transport remains unmounted by default. This does **not** satisfy real MFA enrollment or privileged staging E2E gates.
+
+## A6 — real HTTP boundary regression evidence (2026-11-09)
+
+Backend CI [run 42643340907](https://github.com/nurgeldiserikbay/services-back/actions/runs/42643340907) passed for backend commit `5d0d0518220257166fc22567d3b990baacbde224`. The test `test/admin-moderation-live-http-permissions.test.ts` starts an actual NestJS loopback HTTP server and verifies the enabled moderation read endpoint with server-issued proof, revoked proof, stale MFA and missing resource grants. A subsequent regression also rejects out-of-scope database rows before disclosure.
+
+**Evidence boundary:** HTTP routing and authorization logic are real, but the database adapter is controlled in-process test data. Existing PostgreSQL-backed tests separately check actual admin session records, grants and redacted cases. The combined test suite does **not** yet prove a deployed Admin UI ↔ Backend E2E, real MFA enrollment/recovery, production network allowlisting, or operational rollback. Leave admin routes unmounted/default off until A1–A4 are accepted.
