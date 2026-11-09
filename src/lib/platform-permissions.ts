@@ -29,15 +29,17 @@ export function canDisplayPlatformAction(
   action:PlatformAction,
   now:number,
 ):boolean{
-  if(!verifiedClaims || !Number.isSafeInteger(now) ||
+  if(!verifiedClaims || typeof verifiedClaims!=='object' ||
+     !Number.isSafeInteger(now) ||
      !Number.isSafeInteger(verifiedClaims.sessionExpiresAt) ||
      verifiedClaims.sessionExpiresAt<=now ||
      !Number.isSafeInteger(verifiedClaims.mfaVerifiedAt) ||
      verifiedClaims.mfaVerifiedAt===null ||
      verifiedClaims.mfaVerifiedAt>now ||
      now-verifiedClaims.mfaVerifiedAt>MAX_MFA_AGE_MS ||
+     typeof verifiedClaims.role!=='string' ||
      !platformRoles.includes(verifiedClaims.role) ||
-     !actions.includes(action))return false;
+     typeof action!=='string' || !actions.includes(action))return false;
   return policy[verifiedClaims.role].includes(action);
 }
 
