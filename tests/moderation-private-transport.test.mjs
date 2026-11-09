@@ -39,6 +39,17 @@ test('transport rejects unsafe config before network request',async()=>{
   ModerationTransportUnavailable);
  assert.equal(count,0);
 });
+test('transport rejects noncanonical admin bearer aliases before making any network call',async()=>{
+ let calls=0;
+ const transport=async()=>{calls++;return reply({items:[]});};
+ // A 32-byte base64url token has constrained low bits in its last character.
+ const badTail=bearer.slice(0,-1)+'B';
+ for(const token of [badTail,bearer+'=',bearer+' ',bearer.toLowerCase().slice(0,-1)+'!']){
+  await assert.rejects(fetchTrustedModerationCases({...req,bearer:token,transport}),
+   ModerationTransportUnavailable);
+ }
+ assert.equal(calls,0);
+});
 test('transport fails closed on unredacted, malformed, large and denied responses',async()=>{
  for(const response of [
   reply({items:[{...item(),email:'secret@example.test'}]}),
