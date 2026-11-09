@@ -33,3 +33,9 @@ Also test stale MFA, disabled staff, revoked session, cross-tenant resource IDs,
 - Perform real HTTP E2E with authorized and unauthorized actors, confirm audit events and no secret leakage.
 - Record CI links, commit SHAs, reviewer sign-off, feature-flag state and rollback plan.
 - Do not mount moderation/audit screens or activate server transport until all A1–A4 checks pass.
+
+## CI evidence — 2026-11-09
+
+- [Admin CI run 42629947514](https://github.com/nurgeldiserikbay/services-admin/actions/runs/42629947514) passed for commit `c08a0b09b89d97c86be3cb6409ec7c21ea1d5050`.
+- The production dependency audit now writes `pnpm-audit.json` and archives it for 14 days, including on failure. Audit failure still fails the CI job; lockfile, typecheck, tests and build remain mandatory.
+- This verifies repository build/test gates only. It **does not** validate staging MFA delivery, real privileged HTTP transactions, live integration with backend, or production rollout. The admin UI remains default off until A1–A4 evidence is collected.
