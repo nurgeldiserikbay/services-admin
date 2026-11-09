@@ -26,3 +26,10 @@ test('admin HTTP responses remain private and unindexable',()=>{
   assert.match(nextConfig,/Cross-Origin-Opener-Policy['"],\s*value:\s*['"]same-origin['"]/);
   assert.match(nextConfig,/Cross-Origin-Resource-Policy['"],\s*value:\s*['"]same-origin['"]/);
 });
+
+test('unknown admin routes do not expose navigation or backend data',()=>{
+ const notFound=readFileSync(new URL('../src/app/not-found.tsx',import.meta.url),'utf8');
+ assert.match(notFound,/export default function AdminNotFound/);
+ assert.doesNotMatch(notFound,/fetch\s*\(|dangerouslySetInnerHTML|localStorage|sessionStorage/);
+ assert.doesNotMatch(notFound,/href\s*=|onClick\s*=/);
+});
