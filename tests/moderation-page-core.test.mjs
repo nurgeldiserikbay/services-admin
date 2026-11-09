@@ -40,3 +40,14 @@ test('moderation table localizes state and subject labels without changing backe
   assert.ok(source.includes(label),label);
  }
 });
+
+test('moderation pages reject inherited and non-plain records',()=>{
+ const row=item();
+ const inherited=Object.create(row);
+ const nullProto=Object.assign(Object.create(null),row);
+ const arrayRow=Object.assign([],row);
+ for(const record of [inherited,nullProto,arrayRow]){
+   assert.equal(isSafeModerationCasePage([record]),false);
+ }
+ assert.equal(isSafeModerationCasePage([row],Number.MAX_SAFE_INTEGER),false);
+});
