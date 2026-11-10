@@ -12,21 +12,20 @@ export async function readAuthorizedModerationPage({
   if(typeof backendOrigin!=='string'||!/^https:\/\/[a-z0-9.-]+(?::\d{1,5})?$/i.test(backendOrigin)||
      typeof adminToken!=='string'||!/^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(adminToken)||
      typeof fetchImpl!=='function')throw new Error('admin_read_unavailable');
-  let response;
   try{
-    response=await fetchImpl(backendOrigin+'/v1/admin/moderation/cases',{
+    const response=await fetchImpl(backendOrigin+'/v1/admin/moderation/cases',{
       method:'GET',cache:'no-store',redirect:'error',
       headers:{Authorization:'Bearer '+adminToken,Accept:'application/json'},
       signal:AbortSignal.timeout(5000),
     });
     if(!response||response.status!==200||
-       !String(response.headers?.get('content-type')??'').toLowerCase().includes('application/json'))
+       !/^application\/json(?:\s*;|\s*$)/i.test(String(response.headers?.get('content-type')??'')))
       throw new Error('invalid_response');
     const length=response.headers?.get('content-length');
     if(length!==null&&length!==undefined&&(!/^\d+$/.test(length)||Number(length)>32768))
       throw new Error('invalid_size');
     const body=await response.text();
-    if(body.length>32768)throw new Error('invalid_size');
+    if(Buffer.byteLength(body,'utf8')>32768)throw new Error('invalid_size');
     const payload=JSON.parse(body);
     if(!payload||typeof payload!=='object'||Array.isArray(payload)||
        Object.keys(payload).length!==1||!Object.hasOwn(payload,'items')||
