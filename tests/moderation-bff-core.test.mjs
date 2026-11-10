@@ -53,7 +53,7 @@ test('BFF rejects non-200, non-JSON, oversized and unexpected response fields',a
 });
 
 test('BFF limits actual UTF-8 response bytes, not JavaScript character count',async()=>{
- const hugeUnicode='界'.repeat(11000);
+ const hugeUnicode='界'.repeat(33000);
  const response={status:200,headers:{get:key=>key==='content-type'?'application/json':null},
   text:async()=>JSON.stringify({items:[]})+hugeUnicode.replaceAll('界',' ')};
  await assert.rejects(readAuthorizedModerationPage({
