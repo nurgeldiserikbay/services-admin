@@ -54,6 +54,12 @@ jobs:
           grep -Eiq '^x-robots-tag:.*noindex' "$RUNNER_TEMP/admin-health-headers.txt"
           grep -Eiq '^content-security-policy:.*frame-ancestors' "$RUNNER_TEMP/admin-health-headers.txt"
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/ci-unknown-admin-route)" = 404
+          curl --connect-timeout 2 --max-time 5 --fail --silent http://127.0.0.1:3102/ > "$RUNNER_TEMP/admin-root.html"
+          grep -q 'Әкімшілік панель әзірленуде' "$RUNNER_TEMP/admin-root.html"
+          if grep -Eiq '<form([[:space:]>])|<input([[:space:]>])' "$RUNNER_TEMP/admin-root.html"; then
+            echo 'Admin root unexpectedly exposes an input or login form before MFA rollout'
+            exit 1
+          fi
       - name: Print admin server diagnostics on failure
         if: failure()
         run: |
