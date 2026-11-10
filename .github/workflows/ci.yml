@@ -48,6 +48,11 @@ jobs:
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -I http://127.0.0.1:3102/api/health)" = 200
           curl --connect-timeout 2 --max-time 5 --fail --silent -D "$RUNNER_TEMP/admin-health-headers.txt" -o /dev/null http://127.0.0.1:3102/api/health
           grep -Eiq '^cache-control:.*no-store' "$RUNNER_TEMP/admin-health-headers.txt"
+          grep -Eiq '^x-content-type-options:.*nosniff' "$RUNNER_TEMP/admin-health-headers.txt"
+          grep -Eiq '^x-frame-options:.*DENY' "$RUNNER_TEMP/admin-health-headers.txt"
+          grep -Eiq '^referrer-policy:.*no-referrer' "$RUNNER_TEMP/admin-health-headers.txt"
+          grep -Eiq '^x-robots-tag:.*noindex' "$RUNNER_TEMP/admin-health-headers.txt"
+          grep -Eiq '^content-security-policy:.*frame-ancestors' "$RUNNER_TEMP/admin-health-headers.txt"
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/ci-unknown-admin-route)" = 404
       - name: Print admin server diagnostics on failure
         if: failure()
