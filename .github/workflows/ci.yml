@@ -37,3 +37,17 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Smoke-test production admin liveness and deny unknown routes
+        run: |
+          pnpm start --hostname 127.0.0.1 --port 3102 > "$RUNNER_TEMP/services-admin.log" 2>&1 &
+          for attempt in {1..30}; do
+            if curl --connect-timeout 2 --max-time 3 --fail --silent http://127.0.0.1:3102/api/health >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --connect-timeout 2 --max-time 5 --fail --silent http://127.0.0.1:3102/api/health | grep -q .
+          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -I http://127.0.0.1:3102/api/health)" = 200
+          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/ci-unknown-admin-route)" = 404
+      - name: Print admin server diagnostics on failure
+        if: failure()
+        run: |
+          if [ -f "$RUNNER_TEMP/services-admin.log" ]; then tail -n 120 "$RUNNER_TEMP/services-admin.log"; fi
