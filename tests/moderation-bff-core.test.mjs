@@ -30,6 +30,10 @@ test('BFF fails closed for malformed credentials and transport',async()=>{
  for(const credentials of [
   {backendOrigin:'http://api.example.test',adminToken:token},
   {backendOrigin:'https://api.example.test/path',adminToken:token},
+  {backendOrigin:'https://localhost',adminToken:token},
+  {backendOrigin:'https://127.0.0.1:443',adminToken:token},
+  {backendOrigin:'https://api..example.test',adminToken:token},
+  {backendOrigin:'https://-api.example.test',adminToken:token},
   {backendOrigin:origin,adminToken:'invalid'},
  ]){
   await assert.rejects(readAuthorizedModerationPage({
