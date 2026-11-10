@@ -31,8 +31,28 @@ export async function readAuthorizedModerationPage({
     const length=response.headers?.get('content-length');
     if(length!==null&&length!==undefined&&(!/^\d+$/.test(length)||Number(length)>32768))
       throw new Error('invalid_size');
-    const body=await response.text();
-    if(Buffer.byteLength(body,'utf8')>32768)throw new Error('invalid_size');
+    // Cap the streamed response before buffering untrusted upstream data.
+    let body;
+    if(response.body&&typeof response.body.getReader==='function'){
+      const reader=response.body.getReader();
+      const chunks=[];
+      let total=0;
+      try{
+        while(true){
+          const {done,value}=await reader.read();
+          if(done)break;
+          if(!(value instanceof Uint8Array))throw new Error('invalid_chunk');
+          total+=value.byteLength;
+          if(total>32768)throw new Error('invalid_size');
+          chunks.push(value);
+        }
+      }finally{reader.releaseLock();}
+      body=Buffer.concat(chunks,total).toString('utf8');
+    }else{
+      // Test doubles may only implement text(); real fetch has a stream.
+      body=await response.text();
+      if(Buffer.byteLength(body,'utf8')>32768)throw new Error('invalid_size');
+    }
     const payload=JSON.parse(body);
     if(!payload||typeof payload!=='object'||Array.isArray(payload)||
        Object.keys(payload).length!==1||!Object.hasOwn(payload,'items')||
