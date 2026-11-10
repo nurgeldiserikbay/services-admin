@@ -35,7 +35,7 @@ proof checking, fail-closed expiry/revocation/MFA checks and a read-only
 role-capability decision. They do **not** create an authenticated endpoint,
 persist sessions or enforce per-record visibility.
 
-The baseline migration does not yet contain an `admin_sessions` table.
+The Prisma design schema declares `platform_admin_staff`, `platform_admin_sessions` and `platform_admin_grants`, but these tables are absent from the committed baseline migration SQL. A separate, reviewed migration and deployment verification are required before using them.
 Do not mount privileged UI or interpret a successful authorization-helper
 unit test as proof of a complete login flow. Remaining dependencies include
 persistent admin identities/sessions, MFA enrollment and challenge verification,
