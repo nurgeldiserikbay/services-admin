@@ -52,10 +52,15 @@ test('BFF rejects non-200, non-JSON, oversized and unexpected response fields',a
  }
 });
 
-test('BFF limits actual UTF-8 response bytes, not JavaScript character count',async()=>{
- const hugeUnicode='界'.repeat(33000);
+test('BFF rejects responses larger than 32 KiB even when character count is smaller',async()=>{
+ // JSON whitespace is valid; each non-ASCII whitespace below is escaped by JSON,
+ // so use a long Unicode string within a valid JSON value for the byte limit.
+ const payload={items:[],extra:'界'.repeat(11000)};
+ const body=JSON.stringify(payload);
+ assert.ok(body.length<32768);
+ assert.ok(Buffer.byteLength(body,'utf8')>32768);
  const response={status:200,headers:{get:key=>key==='content-type'?'application/json':null},
-  text:async()=>JSON.stringify({items:[]})+hugeUnicode.replaceAll('界',' ')};
+  text:async()=>body};
  await assert.rejects(readAuthorizedModerationPage({
   backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
  }),/admin_read_unavailable/);
