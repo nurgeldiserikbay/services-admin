@@ -27,20 +27,13 @@ These are UI building blocks, **not evidence of an operational administration sy
 - The endpoint **does not** check PostgreSQL, Redis, privileged sessions, MFA or backend dependencies; it is not a readiness or authorization signal.
 - Unknown routes return a neutral not-found page. Neither this page nor the liveness endpoint grants access to administrative data.
 
-## Backend authorization primitives (not yet wired)
+## Backend integration status (2026-11-10)
 
-The backend now contains `admin-session-token.ts`, `admin-session-verification.ts`,
-`admin-read-policy.ts` and `admin-authorize-read.ts`. These provide token
-proof checking, fail-closed expiry/revocation/MFA checks and a read-only
-role-capability decision. They do **not** create an authenticated endpoint,
-persist sessions or enforce per-record visibility.
+The backend already mounts a **private, read-only** `GET /v1/admin/moderation/cases` route. It is disabled unless `SERVICES_ENABLE_PLATFORM_MODERATION_HTTP=enabled`, requires a dedicated privileged bearer token and an authoritative database-backed role, current MFA proof and explicit resource-scope grants. It returns a bounded, redacted case list, not an unrestricted moderation feed. It is **not** safe to call from the browser with an administrator bearer token.
 
-The Prisma design schema declares `platform_admin_staff`, `platform_admin_sessions` and `platform_admin_grants`, but these tables are absent from the committed baseline migration SQL. A separate, reviewed migration and deployment verification are required before using them.
-Do not mount privileged UI or interpret a successful authorization-helper
-unit test as proof of a complete login flow. Remaining dependencies include
-persistent admin identities/sessions, MFA enrollment and challenge verification,
-secure cookies and CSRF defenses, server-side scoped queries, audit logging,
-revocation, and full API integration tests.
+The backend Prisma design schema defines `platform_admin_staff`, `platform_admin_sessions`, `platform_admin_grants` and `platform_moderation_cases`. A separate `20261110_platform_admin_foundation` migration has been committed, alongside PostgreSQL constraint tests. Its successful deployment and CI execution are **not verified**. Do not rewrite the historical baseline migration.
+
+Admin authentication, MFA enrollment/challenge, secure browser-to-BFF sessions, CSRF controls, protected server-side BFF proxy, moderation writes and durable audit logging are still missing or unverified. The admin frontend remains intentionally fail-closed until those gates are implemented and tested. The backend's read-only route is not a complete administrative product.
 
 ## Stage 3 acceptance gates
 
