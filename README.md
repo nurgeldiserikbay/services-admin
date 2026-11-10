@@ -33,6 +33,8 @@ The backend already mounts a **private, read-only** `GET /v1/admin/moderation/ca
 
 The backend Prisma design schema defines `platform_admin_staff`, `platform_admin_sessions`, `platform_admin_grants` and `platform_moderation_cases`. A separate `20261110_platform_admin_foundation` migration has been committed, alongside PostgreSQL constraint tests. Its successful deployment and CI execution are **not verified**. Do not rewrite the historical baseline migration.
 
+A fail-closed server-side moderation transport now exists at `src/lib/moderation-bff-core.mjs` with unit tests. It validates the upstream response, bounds page size and refuses malformed credentials. **It is not mounted as an HTTP endpoint** and must only receive a token from a future verified server-side admin session; it is not a login mechanism or a browser token store.
+
 Admin authentication, MFA enrollment/challenge, secure browser-to-BFF sessions, CSRF controls, protected server-side BFF proxy, moderation writes and durable audit logging are still missing or unverified. The admin frontend remains intentionally fail-closed until those gates are implemented and tested. The backend's read-only route is not a complete administrative product.
 
 ## Stage 3 acceptance gates
