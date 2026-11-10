@@ -69,3 +69,40 @@ test('BFF rejects responses larger than 32 KiB even when character count is smal
   backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
  }),/admin_read_unavailable/);
 });
+
+test('BFF rejects an oversized streamed response before reading its tail',async()=>{
+ let reads=0;
+ const reader={
+  async read(){
+   reads++;
+   if(reads===1)return {done:false,value:new Uint8Array(32769)};
+   throw new Error('stream tail must not be consumed');
+  },
+  releaseLock(){},
+ };
+ const response={status:200,headers:{get:key=>key==='content-type'?'application/json':null},
+  body:{getReader:()=>reader},
+  text:async()=>{throw new Error('must stream instead');}};
+ await assert.rejects(readAuthorizedModerationPage({
+  backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
+ }),/admin_read_unavailable/);
+ assert.equal(reads,1);
+});
+test('BFF parses a valid streamed JSON page across chunk boundaries',async()=>{
+ const bytes=new TextEncoder().encode(JSON.stringify({items:[row]}));
+ let position=0;
+ const response={status:200,headers:{get:key=>key==='content-type'?'application/json':null},
+  body:{getReader:()=>({
+   async read(){
+    if(position===bytes.length)return {done:true};
+    const chunk=bytes.slice(position,position+7);
+    position+=chunk.length;
+    return {done:false,value:chunk};
+   },
+   releaseLock(){},
+  })},
+  text:async()=>{throw new Error('must stream instead');}};
+ assert.deepEqual(await readAuthorizedModerationPage({
+  backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
+ }),{items:[row]});
+});
