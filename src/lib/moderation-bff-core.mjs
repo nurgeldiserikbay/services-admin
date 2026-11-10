@@ -12,6 +12,13 @@ export async function readAuthorizedModerationPage({
   if(typeof backendOrigin!=='string'||!/^https:\/\/[a-z0-9.-]+(?::\d{1,5})?$/i.test(backendOrigin)||
      typeof adminToken!=='string'||!/^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(adminToken)||
      typeof fetchImpl!=='function')throw new Error('admin_read_unavailable');
+  // Reject userinfo, IP literals and hostnames with empty labels; only a
+  // deployment-controlled HTTPS origin may be used as an upstream.
+  const hostname=backendOrigin.slice(8).split(':')[0];
+  if(hostname.length>253||hostname.split('.').some(label=>
+    label.length===0||label.length>63||label.startsWith('-')||label.endsWith('-'))||
+    /^(?:localhost|\d+(?:\.\d+){3})$/i.test(hostname))
+    throw new Error('admin_read_unavailable');
   try{
     const response=await fetchImpl(backendOrigin+'/v1/admin/moderation/cases',{
       method:'GET',cache:'no-store',redirect:'error',
