@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import {readdirSync,readFileSync} from 'node:fs';
-import {join,relative,resolve} from 'node:path';
+import {join,relative} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {test} from 'node:test';
 
 // Temporary deny-by-default release gate. Update this allowlist only after
 // a reviewed, authenticated admin BFF + MFA + CSRF integration is tested.
-const root=resolve(new URL('../src/app',import.meta.url).pathname);
+const root=fileURLToPath(new URL('../src/app/',import.meta.url));
 const walk=dir=>readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{
  const path=join(dir,entry.name);
  return entry.isDirectory()?walk(path):[path];
