@@ -40,7 +40,7 @@ test('BFF fails closed for malformed credentials and transport',async()=>{
 });
 test('BFF rejects non-200, non-JSON, oversized and unexpected response fields',async()=>{
  for(const response of [
-  reply({items:[]},401),reply({items:[]},200,'text/html'),
+  reply({items:[]},401),reply({items:[]},200,'text/html'),reply({items:[]},200,'application/jsonp'),
   reply({items:[{...row,email:'private@example.test'}]}),
   reply({items:[],token:'leak'}),reply({items:Array.from({length:51},()=>row)}),
   {status:200,headers:{get:(k)=>k==='content-type'?'application/json':'40000'},
@@ -50,4 +50,13 @@ test('BFF rejects non-200, non-JSON, oversized and unexpected response fields',a
    backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
   }),/admin_read_unavailable/);
  }
+});
+
+test('BFF limits actual UTF-8 response bytes, not JavaScript character count',async()=>{
+ const hugeUnicode='界'.repeat(11000);
+ const response={status:200,headers:{get:key=>key==='content-type'?'application/json':null},
+  text:async()=>JSON.stringify({items:[],extra:hugeUnicode})};
+ await assert.rejects(readAuthorizedModerationPage({
+  backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
+ }),/admin_read_unavailable/);
 });
