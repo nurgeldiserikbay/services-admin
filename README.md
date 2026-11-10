@@ -27,6 +27,21 @@ These are UI building blocks, **not evidence of an operational administration sy
 - The endpoint **does not** check PostgreSQL, Redis, privileged sessions, MFA or backend dependencies; it is not a readiness or authorization signal.
 - Unknown routes return a neutral not-found page. Neither this page nor the liveness endpoint grants access to administrative data.
 
+## Backend authorization primitives (not yet wired)
+
+The backend now contains `admin-session-token.ts`, `admin-session-verification.ts`,
+`admin-read-policy.ts` and `admin-authorize-read.ts`. These provide token
+proof checking, fail-closed expiry/revocation/MFA checks and a read-only
+role-capability decision. They do **not** create an authenticated endpoint,
+persist sessions or enforce per-record visibility.
+
+The baseline migration does not yet contain an `admin_sessions` table.
+Do not mount privileged UI or interpret a successful authorization-helper
+unit test as proof of a complete login flow. Remaining dependencies include
+persistent admin identities/sessions, MFA enrollment and challenge verification,
+secure cookies and CSRF defenses, server-side scoped queries, audit logging,
+revocation, and full API integration tests.
+
 ## Stage 3 acceptance gates
 
 See [Admin MVP security acceptance](docs/admin-mvp-security-acceptance.md). Before mounting privileged screens or releasing:
