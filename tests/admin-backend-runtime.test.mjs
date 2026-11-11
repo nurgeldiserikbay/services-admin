@@ -15,7 +15,14 @@ const token='A'.repeat(42)+'E';
 
 test('admin origin parser rejects credentials, insecure remote origins and URL paths',()=>{
   assert.equal(adminBackendOrigin('https://backend.example.kz'),'https://backend.example.kz');
-  assert.equal(adminBackendOrigin('http://localhost:3100'),'http://localhost:3100');
+  const original=process.env.NODE_ENV;
+  try{
+    process.env.NODE_ENV='development';
+    assert.equal(adminBackendOrigin('http://localhost:3100'),'http://localhost:3100');
+  }finally{
+    if(original===undefined)delete process.env.NODE_ENV;
+    else process.env.NODE_ENV=original;
+  }
   for(const url of ['http://backend.example.kz','https://user:pass@backend.example.kz',
     'https://backend.example.kz/v1','https://backend.example.kz/?x=1',
     'https://backend.example.kz/#hash','file:///etc/passwd','not-a-url']){
