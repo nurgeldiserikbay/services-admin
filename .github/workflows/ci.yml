@@ -58,6 +58,8 @@ jobs:
           grep -Eiq '^x-robots-tag:.*noindex' "$RUNNER_TEMP/admin-health-headers.txt"
           grep -Eiq '^content-security-policy:.*frame-ancestors' "$RUNNER_TEMP/admin-health-headers.txt"
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/ci-unknown-admin-route)" = 404
+          # The server-rendered moderation workspace must also be fail-closed.
+          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/moderation)" = 404
           # Private moderation BFF must stay unavailable without explicit rollout.
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/api/moderation/cases)" = 404
           curl --connect-timeout 2 --max-time 5 --silent -D "$RUNNER_TEMP/admin-moderation-headers.txt" -o /dev/null http://127.0.0.1:3102/api/moderation/cases
