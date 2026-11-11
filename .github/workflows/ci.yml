@@ -46,6 +46,10 @@ jobs:
           done
           curl --connect-timeout 2 --max-time 5 --fail --silent http://127.0.0.1:3102/api/health | grep -q .
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -I http://127.0.0.1:3102/api/health)" = 200
+          curl --connect-timeout 2 --max-time 5 --fail --silent -I http://127.0.0.1:3102/api/health > "$RUNNER_TEMP/admin-health-head-headers.txt"
+          grep -Eiq '^cache-control:.*no-store' "$RUNNER_TEMP/admin-health-head-headers.txt"
+          grep -Eiq '^x-content-type-options:.*nosniff' "$RUNNER_TEMP/admin-health-head-headers.txt"
+          grep -Eiq '^x-robots-tag:.*noindex' "$RUNNER_TEMP/admin-health-head-headers.txt"
           curl --connect-timeout 2 --max-time 5 --fail --silent -D "$RUNNER_TEMP/admin-health-headers.txt" -o /dev/null http://127.0.0.1:3102/api/health
           grep -Eiq '^cache-control:.*no-store' "$RUNNER_TEMP/admin-health-headers.txt"
           grep -Eiq '^x-content-type-options:.*nosniff' "$RUNNER_TEMP/admin-health-headers.txt"
