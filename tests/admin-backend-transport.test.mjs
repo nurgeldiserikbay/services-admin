@@ -24,6 +24,9 @@ test('moderation transport validates every row and strips unexpected fields',()=
   assert.match(transport,/STATES\.has\(row\.state\)/);
   assert.match(transport,/Number\.isFinite\(Date\.parse\(row\.createdAt\)\)/);
   assert.match(transport,/new Date\(row\.createdAt\)\.toISOString\(\)!==row\.createdAt/);
+  assert.match(transport,/response\.headers\.get\('content-type'\)/);
+  assert.match(transport,/Number\(length\)>32_768/);
+  assert.match(transport,/body\.length>32_768/);
   assert.match(transport,/return validateModerationPayload\(payload\)/);
   assert.doesNotMatch(transport,/return \{items:payload\.items\}/);
 });
