@@ -149,3 +149,25 @@ test('moderation transport cancels upstream on malformed chunks',async()=>{
     else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
   }
 });
+
+test('moderation payload accepts exactly 50 distinct records and rejects case-insensitive duplicates',()=>{
+  const items=Array.from({length:50},(_,index)=>({
+    ...valid,id:'22222222-2222-4222-8222-'+(index+1).toString(16).padStart(12,'0'),
+  }));
+  assert.equal(validateModerationPayload({items})?.items.length,50);
+  assert.equal(validateModerationPayload({items:[valid,{...valid,id:id.toUpperCase()}]}),null);
+});
+
+test('moderation transport denies network errors without disclosing backend details',async()=>{
+  const originalFetch=globalThis.fetch;
+  const originalOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  try{
+    process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
+    globalThis.fetch=async()=>{throw new Error('private backend failure');};
+    assert.equal(await fetchAdminModerationCases(token),null);
+  }finally{
+    globalThis.fetch=originalFetch;
+    if(originalOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+    else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
+  }
+});
