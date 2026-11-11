@@ -80,3 +80,29 @@ test('moderation transport forwards canonical proof only to configured backend',
     else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
   }
 });
+
+test('moderation transport fails closed on invalid content types, responses and JSON',async()=>{
+  const originalFetch=globalThis.fetch;
+  const originalOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  try{
+    process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
+    const responses=[
+      new Response('<html>error</html>',{headers:{'content-type':'text/html'}}),
+      new Response('{invalid',{headers:{'content-type':'application/json'}}),
+      new Response(JSON.stringify({items:[{...valid,state:'unknown'}]}),
+        {headers:{'content-type':'application/json'}}),
+      new Response(JSON.stringify({items:[valid]}),{status:403,
+        headers:{'content-type':'application/json'}}),
+      new Response(JSON.stringify({items:[valid]}),{headers:{
+        'content-type':'application/json','content-length':'999999'}}),
+    ];
+    for(const response of responses){
+      globalThis.fetch=async()=>response;
+      assert.equal(await fetchAdminModerationCases(token),null);
+    }
+  }finally{
+    globalThis.fetch=originalFetch;
+    if(originalOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+    else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
+  }
+});
