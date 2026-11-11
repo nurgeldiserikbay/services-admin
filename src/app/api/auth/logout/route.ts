@@ -9,6 +9,7 @@ const HEADERS={
  'Cache-Control':'private, no-store, max-age=0',
  'Pragma':'no-cache',
  'Referrer-Policy':'no-referrer',
+ 'X-Content-Type-Options':'nosniff',
  'X-Robots-Tag':'noindex, nofollow, noarchive',
  'Vary':'Cookie, Origin, Sec-Fetch-Site',
 } as const;
