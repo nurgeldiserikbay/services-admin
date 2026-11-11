@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {ADMIN_SESSION_COOKIE} from '@/lib/admin-session.server';
+import {ADMIN_SESSION_COOKIE,openAdminSession} from '@/lib/admin-session.server';
+import {revokeAdminBackendSession} from '@/lib/admin-backend.server';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -16,18 +17,20 @@ function unavailable(){
  return NextResponse.json({code:'NOT_FOUND'},{status:404,headers:HEADERS});
 }
 
-/**
- * Clears only the browser-side encrypted admin session. Server-side backend
- * revocation is a separate required step for the final authenticated logout.
- * Do not enable as a substitute for backend session revocation.
- */
+/** Revoke the backend session before clearing the browser credential. */
 export async function POST(request:NextRequest){
  if(process.env.SERVICES_ADMIN_ENABLE_MODERATION_BFF!=='enabled')return unavailable();
  const origin=request.headers.get('origin');
  const site=request.headers.get('sec-fetch-site');
  if(!origin||origin!==request.nextUrl.origin||
     (site!==null&&site!=='same-origin'&&site!=='none'))return unavailable();
- const response=NextResponse.json({status:'browser_session_cleared'},
+ const token=openAdminSession(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
+ if(!token)return unavailable();
+ if(!await revokeAdminBackendSession(token)){
+  return NextResponse.json({code:'LOGOUT_UNAVAILABLE'},
+   {status:503,headers:HEADERS});
+ }
+ const response=NextResponse.json({status:'revoked'},
   {status:200,headers:HEADERS});
  response.cookies.set(ADMIN_SESSION_COOKIE,'',{
   httpOnly:true,secure:true,sameSite:'strict',path:'/',maxAge:0,
