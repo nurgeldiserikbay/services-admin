@@ -171,3 +171,26 @@ test('moderation transport denies network errors without disclosing backend deta
     else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
   }
 });
+
+test('moderation transport cancels rejected upstream responses before reading',async()=>{
+  const originalFetch=globalThis.fetch;
+  const originalOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  try{
+    process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
+    for(const headers of [
+      {'content-type':'text/html'},
+      {'content-type':'application/json','content-length':'32769'},
+    ]){
+      let canceled=false;
+      const body=new ReadableStream({cancel(){canceled=true;}});
+      globalThis.fetch=async()=>({ok:true,headers:new Headers(headers),body});
+      assert.equal(await fetchAdminModerationCases(token),null);
+      await Promise.resolve();
+      assert.equal(canceled,true);
+    }
+  }finally{
+    globalThis.fetch=originalFetch;
+    if(originalOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+    else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
+  }
+});
