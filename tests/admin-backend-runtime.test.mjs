@@ -6,7 +6,7 @@ import ts from 'typescript';
 // Execute the real TypeScript implementation rather than matching its source text.
 const source=readFileSync(new URL('../src/lib/admin-backend.server.ts',import.meta.url),'utf8');
 const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
-const {adminBackendOrigin,validateModerationPayload,fetchAdminModerationCases}=
+const {adminBackendOrigin,validateModerationPayload,fetchAdminModerationCases,revokeAdminBackendSession}=
   await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
 
 const id='22222222-2222-4222-8222-222222222222';
@@ -265,4 +265,37 @@ test('moderation transport rejects oversized body even if reader cancellation st
     if(originalOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
     else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
   }
+});
+
+
+test('backend logout requires valid proof and exact 200 status',async()=>{
+ const priorOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+ const priorFetch=globalThis.fetch;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
+  let calls=0;
+  globalThis.fetch=async(url,options)=>{
+   calls++;
+   assert.equal(url,'https://backend.example.kz/v1/admin/session/logout');
+   assert.equal(options.method,'POST');
+   assert.equal(options.headers.Authorization,'Bearer '+token);
+   assert.equal(options.credentials,'omit');
+   assert.equal(options.redirect,'error');
+   return {status:200,body:null};
+  };
+  assert.equal(await revokeAdminBackendSession('bad'),false);
+  assert.equal(calls,0);
+  assert.equal(await revokeAdminBackendSession(token),true);
+  assert.equal(calls,1);
+  for(const status of [201,204,206,401,500]){
+   globalThis.fetch=async()=>({status,body:null});
+   assert.equal(await revokeAdminBackendSession(token),false);
+  }
+  globalThis.fetch=async()=>{throw Error('network unavailable');};
+  assert.equal(await revokeAdminBackendSession(token),false);
+ }finally{
+  globalThis.fetch=priorFetch;
+  if(priorOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=priorOrigin;
+ }
 });
