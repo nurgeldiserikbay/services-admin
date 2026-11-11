@@ -40,7 +40,10 @@ export function openAdminSession(cookie:unknown,now=Date.now()):string|null{
   const iv=Buffer.from(parts[1],'base64url');
   const ciphertext=Buffer.from(parts[2],'base64url');
   const tag=Buffer.from(parts[3],'base64url');
-  if(iv.length!==12||tag.length!==16||ciphertext.length>300)return null;
+  if(iv.length!==12||tag.length!==16||ciphertext.length>300||
+     iv.toString('base64url')!==parts[1]||
+     ciphertext.toString('base64url')!==parts[2]||
+     tag.toString('base64url')!==parts[3])return null;
   const decipher=createDecipheriv('aes-256-gcm',key,iv);
   decipher.setAAD(AAD);decipher.setAuthTag(tag);
   const value=JSON.parse(Buffer.concat([decipher.update(ciphertext),decipher.final()]).toString('utf8'));
