@@ -26,6 +26,15 @@ test('admin session uses host-only cookie name and authenticated roundtrip',()=>
   assert.equal(openAdminSession(cookie,now+60_000),null);
   const tampered=cookie.slice(0,-1)+(cookie.endsWith('A')?'B':'A');
   assert.equal(openAdminSession(tampered,now),null);
+  // A 16-byte GCM tag has two padding bits: alternate final characters
+  // must never be accepted even if they decode to the same bytes.
+  const parts=cookie.split('.');
+  const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  const last=alphabet.indexOf(parts[3].at(-1));
+  assert.notEqual(last,-1);
+  const alias=parts[3].slice(0,-1)+alphabet[last^1];
+  assert.equal(Buffer.from(alias,'base64url').equals(Buffer.from(parts[3],'base64url')),true);
+  assert.equal(openAdminSession([parts[0],parts[1],parts[2],alias].join('.'),now),null);
   assert.equal(openAdminSession(cookie.slice(0,10),now),null);
  }finally{
   if(previous===undefined)delete process.env.SERVICES_ADMIN_COOKIE_KEY;
