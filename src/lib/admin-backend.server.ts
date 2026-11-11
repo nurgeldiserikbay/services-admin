@@ -55,6 +55,7 @@ export async function fetchAdminModerationCases(
       method:'GET',
       headers:{Authorization:'Bearer '+bearer,Accept:'application/json'},
       cache:'no-store',
+      credentials:'omit',
       redirect:'error',
       signal:AbortSignal.timeout(5000),
     });
@@ -66,7 +67,8 @@ export async function fetchAdminModerationCases(
       }
       return null;
     };
-    if(!response.ok)return deny();
+    // A partial (206) or otherwise non-200 success is not a complete queue snapshot.
+    if(response.status!==200)return deny();
     const contentType=response.headers.get('content-type')??'';
     if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))return deny();
     const length=response.headers.get('content-length');
