@@ -71,6 +71,7 @@ export async function fetchAdminModerationCases(
       while(true){
         const {done,value}=await reader.read();
         if(done)break;
+        if(!(value instanceof Uint8Array))return null;
         total+=value.byteLength;
         if(total>32_768){
           await reader.cancel();
