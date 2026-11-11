@@ -194,3 +194,32 @@ test('moderation transport cancels rejected upstream responses before reading',a
     else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
   }
 });
+
+test('moderation transport awaits asynchronous cancellation of rejected upstream bodies',async()=>{
+  const originalFetch=globalThis.fetch;
+  const originalOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  try{
+    process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
+    let release;
+    const canceled=new Promise(resolve=>{release=resolve;});
+    let started=false;
+    const body=new ReadableStream({
+      async cancel(){started=true;await canceled;}
+    });
+    globalThis.fetch=async()=>({
+      ok:false,headers:new Headers({'content-type':'application/json'}),body
+    });
+    let settled=false;
+    const pending=fetchAdminModerationCases(token).then(value=>{settled=true;return value;});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(started,true);
+    assert.equal(settled,false);
+    release();
+    assert.equal(await pending,null);
+    assert.equal(settled,true);
+  }finally{
+    globalThis.fetch=originalFetch;
+    if(originalOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+    else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
+  }
+});
