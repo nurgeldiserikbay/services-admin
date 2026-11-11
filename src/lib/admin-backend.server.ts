@@ -67,19 +67,20 @@ export async function fetchAdminModerationCases(
     const reader=response.body.getReader();
     const chunks:Uint8Array[]=[];
     let total=0;
+    let complete=false;
     try{
       while(true){
         const {done,value}=await reader.read();
-        if(done)break;
+        if(done){complete=true;break;}
         if(!(value instanceof Uint8Array))return null;
         total+=value.byteLength;
-        if(total>32_768){
-          await reader.cancel();
-          return null;
-        }
+        if(total>32_768)return null;
         chunks.push(value);
       }
     }finally{
+      if(!complete){
+        try{await reader.cancel();}catch{/* upstream may already be closed */}
+      }
       reader.releaseLock();
     }
     const bytes=new Uint8Array(total);
