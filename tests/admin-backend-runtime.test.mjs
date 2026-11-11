@@ -66,6 +66,7 @@ test('moderation transport forwards canonical proof only to configured backend',
       assert.equal(url,'https://backend.example.kz/v1/admin/moderation/cases');
       assert.equal(options.headers.Authorization,'Bearer '+token);
       assert.equal(options.cache,'no-store');
+      assert.equal(options.credentials,'omit');
       assert.equal(options.redirect,'error');
       return new Response(JSON.stringify({items:[{...valid,privateContact:'secret'}]}),
         {headers:{'content-type':'application/json'}});
@@ -92,6 +93,8 @@ test('moderation transport fails closed on invalid content types, responses and 
       new Response(JSON.stringify({items:[{...valid,state:'unknown'}]}),
         {headers:{'content-type':'application/json'}}),
       new Response(JSON.stringify({items:[valid]}),{status:403,
+        headers:{'content-type':'application/json'}}),
+      new Response(JSON.stringify({items:[valid]}),{status:206,
         headers:{'content-type':'application/json'}}),
       new Response(JSON.stringify({items:[valid]}),{headers:{
         'content-type':'application/json','content-length':'999999'}}),
