@@ -195,28 +195,42 @@ test('moderation transport cancels rejected upstream responses before reading',a
   }
 });
 
-test('moderation transport awaits asynchronous cancellation of rejected upstream bodies',async()=>{
+test('moderation transport rejects promptly even if upstream cancellation never settles',async()=>{
   const originalFetch=globalThis.fetch;
   const originalOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
   try{
     process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
-    let release;
-    const canceled=new Promise(resolve=>{release=resolve;});
     let started=false;
     const body=new ReadableStream({
-      async cancel(){started=true;await canceled;}
+      cancel(){started=true;return new Promise(()=>{});}
     });
     globalThis.fetch=async()=>({
       ok:false,headers:new Headers({'content-type':'application/json'}),body
     });
-    let settled=false;
-    const pending=fetchAdminModerationCases(token).then(value=>{settled=true;return value;});
-    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(await fetchAdminModerationCases(token),null);
     assert.equal(started,true);
-    assert.equal(settled,false);
-    release();
-    assert.equal(await pending,null);
-    assert.equal(settled,true);
+  }finally{
+    globalThis.fetch=originalFetch;
+    if(originalOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+    else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
+  }
+});
+
+test('moderation transport rejects oversized body even if reader cancellation stalls',async()=>{
+  const originalFetch=globalThis.fetch;
+  const originalOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  try{
+    process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
+    let started=false;
+    const body=new ReadableStream({
+      start(controller){controller.enqueue(new Uint8Array(33_000));},
+      cancel(){started=true;return new Promise(()=>{});}
+    });
+    globalThis.fetch=async()=>({
+      ok:true,headers:new Headers({'content-type':'application/json'}),body
+    });
+    assert.equal(await fetchAdminModerationCases(token),null);
+    assert.equal(started,true);
   }finally{
     globalThis.fetch=originalFetch;
     if(originalOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
