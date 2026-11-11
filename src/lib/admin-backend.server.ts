@@ -12,7 +12,8 @@ export function adminBackendOrigin(raw:unknown):string|null{
     if(url.username||url.password||url.search||url.hash||
        (url.pathname!==''&&url.pathname!=='/'))return null;
     const local=url.hostname==='localhost'||url.hostname==='127.0.0.1'||url.hostname==='[::1]';
-    if(url.protocol!=='https:'&&!(local&&url.protocol==='http:'))return null;
+    if(url.protocol!=='https:'&&
+       !(local&&process.env.NODE_ENV!=='production'&&url.protocol==='http:'))return null;
     return url.origin;
   }catch{return null;}
 }
