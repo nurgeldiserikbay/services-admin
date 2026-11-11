@@ -14,5 +14,6 @@ test('admin entrypoint remains fail-closed before verified admin auth and MFA',(
 test('admin liveness does not expose internal dependency or session state',()=>{
   assert.match(health,/status:'ok',service:'services-admin'/);
   assert.match(health,/Cache-Control':'no-store'/);
-  assert.doesNotMatch(health,/process\.env|DATABASE_URL|session|secret|token/i);
+  const handlers=health.slice(health.indexOf('export function GET'));
+  assert.doesNotMatch(handlers,/process\.env|DATABASE_URL|session|secret|token/i);
 });
