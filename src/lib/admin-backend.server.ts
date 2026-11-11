@@ -59,8 +59,11 @@ export async function fetchAdminModerationCases(
       signal:AbortSignal.timeout(5000),
     });
     // Rejected upstream responses must not leave their bodies unread.
-    const deny=()=>{
-      if(response.body)void response.body.cancel().catch(()=>{});
+    const deny=async()=>{
+      // Wait for cancellation so rejected upstream streams cannot linger.
+      if(response.body){
+        try{await response.body.cancel();}catch{/* stream may already be closed */}
+      }
       return null;
     };
     if(!response.ok)return deny();
