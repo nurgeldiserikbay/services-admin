@@ -59,10 +59,10 @@ export async function fetchAdminModerationCases(
       signal:AbortSignal.timeout(5000),
     });
     // Rejected upstream responses must not leave their bodies unread.
-    const deny=async()=>{
-      // Wait for cancellation so rejected upstream streams cannot linger.
+    const deny=()=>{
+      // Best-effort cancellation must not delay rejection indefinitely.
       if(response.body){
-        try{await response.body.cancel();}catch{/* stream may already be closed */}
+        try{void response.body.cancel().catch(()=>{});}catch{/* stream may already be closed */}
       }
       return null;
     };
@@ -87,7 +87,7 @@ export async function fetchAdminModerationCases(
       }
     }finally{
       if(!complete){
-        try{await reader.cancel();}catch{/* upstream may already be closed */}
+        try{void reader.cancel().catch(()=>{});}catch{/* upstream may already be closed */}
       }
       reader.releaseLock();
     }
