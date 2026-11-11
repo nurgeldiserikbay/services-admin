@@ -54,3 +54,29 @@ test('moderation transport denies oversized streaming responses before EOF',asyn
     else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
   }
 });
+
+test('moderation transport forwards canonical proof only to configured backend',async()=>{
+  const originalFetch=globalThis.fetch;
+  const originalOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  try{
+    process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
+    let calls=0;
+    globalThis.fetch=async(url,options)=>{
+      calls++;
+      assert.equal(url,'https://backend.example.kz/v1/admin/moderation/cases');
+      assert.equal(options.headers.Authorization,'Bearer '+token);
+      assert.equal(options.cache,'no-store');
+      assert.equal(options.redirect,'error');
+      return new Response(JSON.stringify({items:[{...valid,privateContact:'secret'}]}),
+        {headers:{'content-type':'application/json'}});
+    };
+    assert.equal(await fetchAdminModerationCases('bad'),null);
+    assert.equal(calls,0);
+    assert.deepEqual(await fetchAdminModerationCases(token),{items:[valid]});
+    assert.equal(calls,1);
+  }finally{
+    globalThis.fetch=originalFetch;
+    if(originalOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+    else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
+  }
+});
