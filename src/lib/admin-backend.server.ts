@@ -58,11 +58,16 @@ export async function fetchAdminModerationCases(
       redirect:'error',
       signal:AbortSignal.timeout(5000),
     });
-    if(!response.ok)return null;
+    // Rejected upstream responses must not leave their bodies unread.
+    const deny=()=>{
+      if(response.body)void response.body.cancel().catch(()=>{});
+      return null;
+    };
+    if(!response.ok)return deny();
     const contentType=response.headers.get('content-type')??'';
-    if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))return null;
+    if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))return deny();
     const length=response.headers.get('content-length');
-    if(length!==null&&(!/^\d+$/.test(length)||Number(length)>32_768))return null;
+    if(length!==null&&(!/^\d+$/.test(length)||Number(length)>32_768))return deny();
     if(!response.body)return null;
     const reader=response.body.getReader();
     const chunks:Uint8Array[]=[];
