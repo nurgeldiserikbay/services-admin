@@ -130,3 +130,22 @@ test('moderation transport rejects malformed stream chunks and invalid UTF-8',as
     else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
   }
 });
+
+test('moderation transport cancels upstream on malformed chunks',async()=>{
+  const originalFetch=globalThis.fetch;
+  const originalOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  try{
+    process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
+    let canceled=false;
+    globalThis.fetch=async()=>new Response(new ReadableStream({
+      start(controller){controller.enqueue('invalid byte chunk');},
+      cancel(){canceled=true;}
+    }),{headers:{'content-type':'application/json'}});
+    assert.equal(await fetchAdminModerationCases(token),null);
+    assert.equal(canceled,true);
+  }finally{
+    globalThis.fetch=originalFetch;
+    if(originalOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+    else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=originalOrigin;
+  }
+});
