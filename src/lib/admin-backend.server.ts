@@ -36,7 +36,8 @@ export function validateModerationPayload(payload:unknown):{items:ModerationCase
        typeof row.subjectKind!=='string'||!KINDS.has(row.subjectKind)||
        typeof row.state!=='string'||!STATES.has(row.state)||
        typeof row.createdAt!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(row.createdAt)||
-       !Number.isFinite(Date.parse(row.createdAt)))return null;
+       !Number.isFinite(Date.parse(row.createdAt))||
+       new Date(row.createdAt).toISOString()!==row.createdAt)return null;
     seen.add(row.id.toLowerCase());
     items.push({id:row.id,subjectKind:row.subjectKind as ModerationCase['subjectKind'],
       state:row.state as ModerationCase['state'],createdAt:row.createdAt});
