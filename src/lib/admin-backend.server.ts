@@ -17,9 +17,36 @@ export function adminBackendOrigin(raw:unknown):string|null{
   }catch{return null;}
 }
 
+export type ModerationCase=Readonly<{id:string;subjectKind:'professional'|'organization'|'review'|'affiliation';state:'triage'|'in_review'|'decision'|'appeal'|'closed';createdAt:string}>;
+
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const KINDS=new Set(['professional','organization','review','affiliation']);
+const STATES=new Set(['triage','in_review','decision','appeal','closed']);
+
+/** Never forward an unvalidated backend payload to a browser-facing BFF. */
+export function validateModerationPayload(payload:unknown):{items:ModerationCase[]}|null{
+  if(!payload||typeof payload!=='object'||!('items' in payload)||
+     !Array.isArray(payload.items)||payload.items.length>50)return null;
+  const items:ModerationCase[]=[];
+  const seen=new Set<string>();
+  for(const item of payload.items){
+    if(!item||typeof item!=='object')return null;
+    const row=item as Record<string,unknown>;
+    if(typeof row.id!=='string'||!UUID.test(row.id)||seen.has(row.id.toLowerCase())||
+       typeof row.subjectKind!=='string'||!KINDS.has(row.subjectKind)||
+       typeof row.state!=='string'||!STATES.has(row.state)||
+       typeof row.createdAt!=='string'||!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/.test(row.createdAt)||
+       !Number.isFinite(Date.parse(row.createdAt)))return null;
+    seen.add(row.id.toLowerCase());
+    items.push({id:row.id,subjectKind:row.subjectKind as ModerationCase['subjectKind'],
+      state:row.state as ModerationCase['state'],createdAt:row.createdAt});
+  }
+  return {items};
+}
+
 export async function fetchAdminModerationCases(
   bearer:unknown,
-):Promise<{items:unknown[]}|null>{
+):Promise<{items:ModerationCase[]}|null>{
   const origin=adminBackendOrigin(process.env.SERVICES_BACKEND_INTERNAL_ORIGIN);
   if(!origin||typeof bearer!=='string'||!TOKEN.test(bearer))return null;
   try{
@@ -32,8 +59,6 @@ export async function fetchAdminModerationCases(
     });
     if(!response.ok)return null;
     const payload:unknown=await response.json();
-    if(!payload||typeof payload!=='object'||!('items' in payload)||
-       !Array.isArray(payload.items)||payload.items.length>50)return null;
-    return {items:payload.items};
+    return validateModerationPayload(payload);
   }catch{return null;}
 }
