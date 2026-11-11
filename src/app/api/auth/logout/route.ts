@@ -27,7 +27,7 @@ export async function POST(request:NextRequest){
  const site=request.headers.get('sec-fetch-site');
  if(!origin||origin!==request.nextUrl.origin||
     (site!==null&&site!=='same-origin'&&site!=='none'))return unavailable();
- const response=NextResponse.json({status:'signed_out'},
+ const response=NextResponse.json({status:'browser_session_cleared'},
   {status:200,headers:HEADERS});
  response.cookies.set(ADMIN_SESSION_COOKIE,'',{
   httpOnly:true,secure:true,sameSite:'strict',path:'/',maxAge:0,
