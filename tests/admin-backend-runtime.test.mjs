@@ -23,6 +23,25 @@ test('admin origin parser rejects credentials, insecure remote origins and URL p
   }
 });
 
+test('admin backend origin requires HTTPS in production, including loopback',()=>{
+  const previous=process.env.NODE_ENV;
+  try{
+    process.env.NODE_ENV='production';
+    for(const origin of [
+      'http://localhost:3100','http://127.0.0.1:3100','http://[::1]:3100',
+      'http://backend.example.kz',
+    ])assert.equal(adminBackendOrigin(origin),null,origin);
+    assert.equal(adminBackendOrigin('https://backend.example.kz'),
+      'https://backend.example.kz');
+    process.env.NODE_ENV='development';
+    assert.equal(adminBackendOrigin('http://localhost:3100'),
+      'http://localhost:3100');
+  }finally{
+    if(previous===undefined)delete process.env.NODE_ENV;
+    else process.env.NODE_ENV=previous;
+  }
+});
+
 test('moderation response validator strips unknown fields and denies malformed rows',()=>{
   assert.deepEqual(validateModerationPayload({items:[{...valid,privateContact:'secret'}]}),{items:[valid]});
   assert.deepEqual(validateModerationPayload({items:[]}),{items:[]});
