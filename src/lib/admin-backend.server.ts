@@ -59,7 +59,13 @@ export async function fetchAdminModerationCases(
       signal:AbortSignal.timeout(5000),
     });
     if(!response.ok)return null;
-    const payload:unknown=await response.json();
+    const contentType=response.headers.get('content-type')??'';
+    if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))return null;
+    const length=response.headers.get('content-length');
+    if(length!==null&&(!/^\d+$/.test(length)||Number(length)>32_768))return null;
+    const body=await response.text();
+    if(body.length>32_768)return null;
+    const payload:unknown=JSON.parse(body);
     return validateModerationPayload(payload);
   }catch{return null;}
 }
