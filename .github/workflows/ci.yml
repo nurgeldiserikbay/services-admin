@@ -58,6 +58,12 @@ jobs:
           grep -Eiq '^x-robots-tag:.*noindex' "$RUNNER_TEMP/admin-health-headers.txt"
           grep -Eiq '^content-security-policy:.*frame-ancestors' "$RUNNER_TEMP/admin-health-headers.txt"
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/ci-unknown-admin-route)" = 404
+          # Private workspace must never render logout UI without a valid session.
+          curl --connect-timeout 2 --max-time 5 --silent http://127.0.0.1:3102/moderation > "$RUNNER_TEMP/admin-private-denied.html"
+          if grep -q 'Жүйеден шығу' "$RUNNER_TEMP/admin-private-denied.html"; then
+            echo 'Private logout UI leaked on unauthenticated moderation route'
+            exit 1
+          fi
           # The server-rendered moderation workspace must also be fail-closed.
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/moderation)" = 404
           # Logout must not be exposed before authenticated session rollout.
