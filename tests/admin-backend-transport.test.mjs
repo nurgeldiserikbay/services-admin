@@ -26,7 +26,10 @@ test('moderation transport validates every row and strips unexpected fields',()=
   assert.match(transport,/new Date\(row\.createdAt\)\.toISOString\(\)!==row\.createdAt/);
   assert.match(transport,/response\.headers\.get\('content-type'\)/);
   assert.match(transport,/Number\(length\)>32_768/);
-  assert.match(transport,/body\.length>32_768/);
+  assert.match(transport,/response\.body\.getReader\(\)/);
+  assert.match(transport,/total>32_768/);
+  assert.match(transport,/reader\.cancel\(\)/);
+  assert.match(transport,/new TextDecoder\('utf-8',\{fatal:true\}\)/);
   assert.match(transport,/return validateModerationPayload\(payload\)/);
   assert.doesNotMatch(transport,/return \{items:payload\.items\}/);
 });
