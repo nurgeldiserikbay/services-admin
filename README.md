@@ -62,3 +62,38 @@ pnpm build
 ```
 
 No claim of passing checks is made solely from the presence of scripts or test files.
+
+
+## Private moderation BFF and logout (2026-11-11)
+
+A server-rendered read-only moderation page now exists at `/moderation`.
+It decrypts the short-lived, HttpOnly, Secure, SameSite=Strict
+`__Host-services-admin-session` cookie on the Next.js server and forwards
+the canonical bearer only to the configured backend. The browser never
+receives the raw backend token. The page and `GET /api/moderation/cases`
+are **default-off**, and neither provides login or MFA enrollment.
+
+The moderation page contains a logout control. Its
+`POST /api/auth/logout` handler checks same-origin requests, opens the
+encrypted cookie, calls the backend `POST /v1/admin/session/logout`
+with the bearer and clears the cookie **only after HTTP 200**.
+Backend logout is separately default-off. If backend revocation cannot be
+confirmed, the BFF returns 503 and keeps the browser cookie, so operators
+must not treat that attempt as a confirmed sign-out.
+
+Rollout requires all of the following server-side configuration, with secrets
+supplied through a secret manager (never committed):
+
+- Admin: `SERVICES_ADMIN_ENABLE_MODERATION_BFF=enabled`
+- Admin: `SERVICES_ADMIN_COOKIE_KEY` — canonical base64 of 32 random bytes
+- Admin: `SERVICES_BACKEND_INTERNAL_ORIGIN` — trusted HTTPS backend origin
+- Backend: `SERVICES_ENABLE_PLATFORM_MODERATION_HTTP=enabled`
+- Backend: `SERVICES_ENABLE_PLATFORM_ADMIN_LOGOUT_HTTP=enabled`
+- Backend: `PLATFORM_ADMIN_SESSION_HMAC_KEY` — canonical base64 of 32 bytes
+
+**Do not enable these flags yet.** The platform still lacks a complete,
+verified privileged login and MFA issuance flow, and no public UI should
+accept raw admin bearer tokens. Backend roles, scopes, session expiry and
+MFA freshness must remain authoritative for each privileged read. Before
+production rollout, verify both repos' CI, database migrations, runtime
+integration, negative-path tests and secure cookie behavior on HTTPS.
