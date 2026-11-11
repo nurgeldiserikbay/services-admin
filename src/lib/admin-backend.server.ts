@@ -35,7 +35,7 @@ export function validateModerationPayload(payload:unknown):{items:ModerationCase
     if(typeof row.id!=='string'||!UUID.test(row.id)||seen.has(row.id.toLowerCase())||
        typeof row.subjectKind!=='string'||!KINDS.has(row.subjectKind)||
        typeof row.state!=='string'||!STATES.has(row.state)||
-       typeof row.createdAt!=='string'||!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/.test(row.createdAt)||
+       typeof row.createdAt!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(row.createdAt)||
        !Number.isFinite(Date.parse(row.createdAt)))return null;
     seen.add(row.id.toLowerCase());
     items.push({id:row.id,subjectKind:row.subjectKind as ModerationCase['subjectKind'],
