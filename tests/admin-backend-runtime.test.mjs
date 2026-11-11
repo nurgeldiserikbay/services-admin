@@ -143,7 +143,7 @@ test('moderation transport rejects malformed stream chunks and invalid UTF-8',as
       controller.close();
     }});
     for(const body of [malformed,invalidUtf8]){
-      globalThis.fetch=async()=>({ok:true,headers:new Headers({'content-type':'application/json'}),body});
+      globalThis.fetch=async()=>({status:200,headers:new Headers({'content-type':'application/json'}),body});
       assert.equal(await fetchAdminModerationCases(token),null);
     }
   }finally{
@@ -159,7 +159,7 @@ test('moderation transport cancels upstream on malformed chunks',async()=>{
   try{
     process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
     let canceled=false;
-    globalThis.fetch=async()=>({ok:true,headers:new Headers({'content-type':'application/json'}),body:new ReadableStream({
+    globalThis.fetch=async()=>({status:200,headers:new Headers({'content-type':'application/json'}),body:new ReadableStream({
       start(controller){controller.enqueue('invalid byte chunk');},
       cancel(){canceled=true;}
     })});
@@ -205,7 +205,7 @@ test('moderation transport cancels rejected upstream responses before reading',a
     ]){
       let canceled=false;
       const body=new ReadableStream({cancel(){canceled=true;}});
-      globalThis.fetch=async()=>({ok:true,headers:new Headers(headers),body});
+      globalThis.fetch=async()=>({status:200,headers:new Headers(headers),body});
       assert.equal(await fetchAdminModerationCases(token),null);
       await Promise.resolve();
       assert.equal(canceled,true);
@@ -227,7 +227,7 @@ test('moderation transport rejects promptly even if upstream cancellation never 
       cancel(){started=true;return new Promise(()=>{});}
     });
     globalThis.fetch=async()=>({
-      ok:false,headers:new Headers({'content-type':'application/json'}),body
+      status:403,headers:new Headers({'content-type':'application/json'}),body
     });
     assert.equal(await fetchAdminModerationCases(token),null);
     assert.equal(started,true);
@@ -249,7 +249,7 @@ test('moderation transport rejects oversized body even if reader cancellation st
       cancel(){started=true;return new Promise(()=>{});}
     });
     globalThis.fetch=async()=>({
-      ok:true,headers:new Headers({'content-type':'application/json'}),body
+      status:200,headers:new Headers({'content-type':'application/json'}),body
     });
     assert.equal(await fetchAdminModerationCases(token),null);
     assert.equal(started,true);
