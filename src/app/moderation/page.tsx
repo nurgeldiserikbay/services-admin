@@ -1,6 +1,7 @@
 import {cookies,headers} from 'next/headers';
 import {notFound} from 'next/navigation';
 import {ModerationQueue} from '@/components/ModerationQueue';
+import {AdminLogoutButton} from '@/components/AdminLogoutButton';
 import {ADMIN_SESSION_COOKIE,openAdminSession} from '@/lib/admin-session.server';
 import {fetchAdminModerationCases} from '@/lib/admin-backend.server';
 
@@ -24,6 +25,7 @@ export default async function ModerationPage(){
  const result=await fetchAdminModerationCases(bearer);
  if(!result)notFound();
  return <main style={{minHeight:'100vh',padding:'clamp(16px,4vw,48px)'}}>
+   <div style={{display:'flex',justifyContent:'flex-end',marginBottom:16}}><AdminLogoutButton/></div>
    <ModerationQueue items={result.items}/>
  </main>;
 }
