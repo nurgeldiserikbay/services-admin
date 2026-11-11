@@ -63,8 +63,28 @@ export async function fetchAdminModerationCases(
     if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))return null;
     const length=response.headers.get('content-length');
     if(length!==null&&(!/^\d+$/.test(length)||Number(length)>32_768))return null;
-    const body=await response.text();
-    if(body.length>32_768)return null;
+    if(!response.body)return null;
+    const reader=response.body.getReader();
+    const chunks:Uint8Array[]=[];
+    let total=0;
+    try{
+      while(true){
+        const {done,value}=await reader.read();
+        if(done)break;
+        total+=value.byteLength;
+        if(total>32_768){
+          await reader.cancel();
+          return null;
+        }
+        chunks.push(value);
+      }
+    }finally{
+      reader.releaseLock();
+    }
+    const bytes=new Uint8Array(total);
+    let offset=0;
+    for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+    const body=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
     const payload:unknown=JSON.parse(body);
     return validateModerationPayload(payload);
   }catch{return null;}
