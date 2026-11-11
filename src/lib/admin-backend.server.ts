@@ -102,3 +102,26 @@ export async function fetchAdminModerationCases(
     return validateModerationPayload(payload);
   }catch{return null;}
 }
+
+
+/**
+ * Revoke a backend admin session before deleting the browser cookie.
+ * Only HTTP 200 is a confirmed revocation; failures must not be reported
+ * as a successful server logout.
+ */
+export async function revokeAdminBackendSession(bearer:unknown):Promise<boolean>{
+ const origin=adminBackendOrigin(process.env.SERVICES_BACKEND_INTERNAL_ORIGIN);
+ if(!origin||typeof bearer!=='string'||!TOKEN.test(bearer))return false;
+ try{
+  const response=await fetch(origin+'/v1/admin/session/logout',{
+   method:'POST',
+   headers:{Authorization:'Bearer '+bearer,Accept:'application/json'},
+   cache:'no-store',credentials:'omit',redirect:'error',
+   signal:AbortSignal.timeout(5000),
+  });
+  if(response.body){
+   try{void response.body.cancel().catch(()=>{});}catch{/* already closed */}
+  }
+  return response.status===200;
+ }catch{return false;}
+}
