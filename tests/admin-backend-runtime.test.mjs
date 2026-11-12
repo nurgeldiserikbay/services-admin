@@ -281,15 +281,21 @@ test('backend logout requires valid proof and exact 200 status',async()=>{
    assert.equal(options.headers.Authorization,'Bearer '+token);
    assert.equal(options.credentials,'omit');
    assert.equal(options.redirect,'error');
-   return {status:200,body:null};
+   return {status:200,body:null,headers:new Headers({'cache-control':'no-store'})};
   };
   assert.equal(await revokeAdminBackendSession('bad'),false);
   assert.equal(calls,0);
   assert.equal(await revokeAdminBackendSession(token),true);
   assert.equal(calls,1);
   for(const status of [201,204,206,401,500]){
-   globalThis.fetch=async()=>({status,body:null});
+   globalThis.fetch=async()=>({status,body:null,headers:new Headers({'cache-control':'no-store'})});
    assert.equal(await revokeAdminBackendSession(token),false);
+  }
+  for(const cacheControl of [null,'private, max-age=60','no-cache','no-store-please']){
+   const headers=new Headers();
+   if(cacheControl!==null)headers.set('cache-control',cacheControl);
+   globalThis.fetch=async()=>({status:200,body:null,headers});
+   assert.equal(await revokeAdminBackendSession(token),false,cacheControl);
   }
   globalThis.fetch=async()=>{throw Error('network unavailable');};
   assert.equal(await revokeAdminBackendSession(token),false);
