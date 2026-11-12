@@ -54,3 +54,16 @@ export function openAdminSession(cookie:unknown,now=Date.now()):string|null{
   return value.token;
  }catch{return null;}
 }
+
+/** Reject duplicate or ambiguous session cookies before Next.js cookie parsing. */
+export function readUniqueAdminCookie(raw:unknown,parsed:unknown):string|null{
+ if(typeof raw!=='string'||raw.length>8192||typeof parsed!=='string')return null;
+ let count=0;
+ for(const part of raw.split(';')){
+  const pair=part.trim();
+  const separator=pair.indexOf('=');
+  if(separator<0)continue;
+  if(pair.slice(0,separator).trim()===ADMIN_SESSION_COOKIE)count++;
+ }
+ return count===1?parsed:null;
+}
