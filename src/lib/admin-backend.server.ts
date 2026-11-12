@@ -70,6 +70,9 @@ export async function fetchAdminModerationCases(
     };
     // A partial (206) or otherwise non-200 success is not a complete queue snapshot.
     if(response.status!==200)return deny();
+    // Privileged data must never be accepted from an upstream cacheable response.
+    const cacheControl=response.headers.get('cache-control')??'';
+    if(!/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl))return deny();
     const contentType=response.headers.get('content-type')??'';
     if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))return deny();
     const length=response.headers.get('content-length');
