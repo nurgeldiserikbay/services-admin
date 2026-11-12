@@ -59,11 +59,18 @@ export function openAdminSession(cookie:unknown,now=Date.now()):string|null{
 export function readUniqueAdminCookie(raw:unknown,parsed:unknown):string|null{
  if(typeof raw!=='string'||raw.length>8192||typeof parsed!=='string')return null;
  let count=0;
+ let value:string|null=null;
  for(const part of raw.split(';')){
   const pair=part.trim();
   const separator=pair.indexOf('=');
   if(separator<0)continue;
-  if(pair.slice(0,separator).trim()===ADMIN_SESSION_COOKIE)count++;
+  if(pair.slice(0,separator).trim()!==ADMIN_SESSION_COOKIE)continue;
+  count++;
+  // Do not trust a framework-decoded value that disagrees with the raw header.
+  // Session cookies are unquoted base64url envelopes, never URL-encoded.
+  const candidate=pair.slice(separator+1);
+  if(!/^[A-Za-z0-9_.-]{1,512}$/.test(candidate))return null;
+  value=candidate;
  }
- return count===1?parsed:null;
+ return count===1&&value===parsed?value:null;
 }
