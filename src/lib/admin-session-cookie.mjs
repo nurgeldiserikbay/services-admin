@@ -11,7 +11,7 @@ const MAX_COOKIE_HEADER_BYTES=4096;
 export function readAdminSessionCookie(header){
   if(typeof header!=='string'||Buffer.byteLength(header,'utf8')>MAX_COOKIE_HEADER_BYTES)
     return null;
-  let found:string|null=null;
+  let found=null;
   for(const segment of header.split(';')){
     const part=segment.trim();
     const separator=part.indexOf('=');
