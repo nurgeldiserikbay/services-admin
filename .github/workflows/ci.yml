@@ -79,7 +79,26 @@ jobs:
             echo 'Admin root unexpectedly exposes an input or login form before MFA rollout'
             exit 1
           fi
+      - name: Smoke-test enabled admin BFF still denies missing or forged sessions
+        env:
+          SERVICES_ADMIN_ENABLE_MODERATION_BFF: enabled
+        run: |
+          pnpm start --hostname 127.0.0.1 --port 3103 > "$RUNNER_TEMP/services-admin-enabled.log" 2>&1 &
+          for attempt in {1..30}; do
+            if curl --connect-timeout 2 --max-time 3 --fail --silent http://127.0.0.1:3103/api/health >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --connect-timeout 2 --max-time 5 --fail --silent http://127.0.0.1:3103/api/health | grep -q .
+          # Enabled flag alone must not grant access; backend secrets and valid MFA session are absent.
+          for route in /moderation /api/moderation/cases; do
+            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' "http://127.0.0.1:3103$route")" = 404
+            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged' "http://127.0.0.1:3103$route")" = 404
+            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Origin: https://attacker.example' "http://127.0.0.1:3103$route")" = 404
+          done
+          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X POST -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/api/auth/logout)" = 404
+          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://attacker.example' http://127.0.0.1:3103/api/auth/logout)" = 404
       - name: Print admin server diagnostics on failure
         if: failure()
         run: |
           if [ -f "$RUNNER_TEMP/services-admin.log" ]; then tail -n 120 "$RUNNER_TEMP/services-admin.log"; fi
+          if [ -f "$RUNNER_TEMP/services-admin-enabled.log" ]; then tail -n 120 "$RUNNER_TEMP/services-admin-enabled.log"; fi
