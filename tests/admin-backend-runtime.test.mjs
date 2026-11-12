@@ -71,7 +71,7 @@ test('moderation transport denies oversized streaming responses before EOF',asyn
         controller.enqueue(new Uint8Array(33_000));
       },
       cancel(){canceled=true;}
-    }),{headers:{'content-type':'application/json'}});
+    }),{headers:{'content-type':'application/json','cache-control':'no-store'}});
     assert.equal(await fetchAdminModerationCases(token),null);
     assert.equal(canceled,true);
   }finally{
@@ -95,7 +95,7 @@ test('moderation transport forwards canonical proof only to configured backend',
       assert.equal(options.credentials,'omit');
       assert.equal(options.redirect,'error');
       return new Response(JSON.stringify({items:[{...valid,privateContact:'secret'}]}),
-        {headers:{'content-type':'application/json'}});
+        {headers:{'content-type':'application/json','cache-control':'no-store'}});
     };
     assert.equal(await fetchAdminModerationCases('bad'),null);
     assert.equal(calls,0);
@@ -115,15 +115,15 @@ test('moderation transport fails closed on invalid content types, responses and 
     process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
     const responses=[
       new Response('<html>error</html>',{headers:{'content-type':'text/html'}}),
-      new Response('{invalid',{headers:{'content-type':'application/json'}}),
+      new Response('{invalid',{headers:{'content-type':'application/json','cache-control':'no-store'}}),
       new Response(JSON.stringify({items:[{...valid,state:'unknown'}]}),
-        {headers:{'content-type':'application/json'}}),
+        {headers:{'content-type':'application/json','cache-control':'no-store'}}),
       new Response(JSON.stringify({items:[valid]}),{status:403,
-        headers:{'content-type':'application/json'}}),
+        headers:{'content-type':'application/json','cache-control':'no-store'}}),
       new Response(JSON.stringify({items:[valid]}),{status:206,
-        headers:{'content-type':'application/json'}}),
+        headers:{'content-type':'application/json','cache-control':'no-store'}}),
       new Response(JSON.stringify({items:[valid]}),{headers:{
-        'content-type':'application/json','content-length':'999999'}}),
+        'content-type':'application/json','cache-control':'no-store','content-length':'999999'}}),
     ];
     for(const response of responses){
       globalThis.fetch=async()=>response;
@@ -150,7 +150,7 @@ test('moderation transport rejects malformed stream chunks and invalid UTF-8',as
       controller.close();
     }});
     for(const body of [malformed,invalidUtf8]){
-      globalThis.fetch=async()=>({status:200,headers:new Headers({'content-type':'application/json'}),body});
+      globalThis.fetch=async()=>({status:200,headers:new Headers({'content-type':'application/json','cache-control':'no-store'}),body});
       assert.equal(await fetchAdminModerationCases(token),null);
     }
   }finally{
@@ -166,7 +166,7 @@ test('moderation transport cancels upstream on malformed chunks',async()=>{
   try{
     process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
     let canceled=false;
-    globalThis.fetch=async()=>({status:200,headers:new Headers({'content-type':'application/json'}),body:new ReadableStream({
+    globalThis.fetch=async()=>({status:200,headers:new Headers({'content-type':'application/json','cache-control':'no-store'}),body:new ReadableStream({
       start(controller){controller.enqueue('invalid byte chunk');},
       cancel(){canceled=true;}
     })});
@@ -208,7 +208,7 @@ test('moderation transport cancels rejected upstream responses before reading',a
     process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
     for(const headers of [
       {'content-type':'text/html'},
-      {'content-type':'application/json','content-length':'32769'},
+      {'content-type':'application/json','cache-control':'no-store','content-length':'32769'},
     ]){
       let canceled=false;
       const body=new ReadableStream({cancel(){canceled=true;}});
@@ -234,7 +234,7 @@ test('moderation transport rejects promptly even if upstream cancellation never 
       cancel(){started=true;return new Promise(()=>{});}
     });
     globalThis.fetch=async()=>({
-      status:403,headers:new Headers({'content-type':'application/json'}),body
+      status:403,headers:new Headers({'content-type':'application/json','cache-control':'no-store'}),body
     });
     assert.equal(await fetchAdminModerationCases(token),null);
     assert.equal(started,true);
@@ -256,7 +256,7 @@ test('moderation transport rejects oversized body even if reader cancellation st
       cancel(){started=true;return new Promise(()=>{});}
     });
     globalThis.fetch=async()=>({
-      status:200,headers:new Headers({'content-type':'application/json'}),body
+      status:200,headers:new Headers({'content-type':'application/json','cache-control':'no-store'}),body
     });
     assert.equal(await fetchAdminModerationCases(token),null);
     assert.equal(started,true);
@@ -297,5 +297,28 @@ test('backend logout requires valid proof and exact 200 status',async()=>{
   globalThis.fetch=priorFetch;
   if(priorOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
   else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=priorOrigin;
+ }
+});
+
+
+test('moderation transport refuses cacheable privileged upstream responses',async()=>{
+ const oldFetch=globalThis.fetch;
+ const oldOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://backend.example.kz';
+  for(const cacheControl of [null,'private, max-age=60','no-cache','no-store-please','public, no-store-please']){
+   const headers={'content-type':'application/json'};
+   if(cacheControl!==null)headers['cache-control']=cacheControl;
+   globalThis.fetch=async()=>new Response(JSON.stringify({items:[valid]}),{headers});
+   assert.equal(await fetchAdminModerationCases(token),null,cacheControl);
+  }
+  globalThis.fetch=async()=>new Response(JSON.stringify({items:[valid]}),{
+   headers:{'content-type':'application/json','cache-control':'private, max-age=0, no-store'},
+  });
+  assert.deepEqual(await fetchAdminModerationCases(token),{items:[valid]});
+ }finally{
+  globalThis.fetch=oldFetch;
+  if(oldOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=oldOrigin;
  }
 });
