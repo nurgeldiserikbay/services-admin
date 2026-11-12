@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {ADMIN_SESSION_COOKIE,openAdminSession} from '@/lib/admin-session.server';
+import {ADMIN_SESSION_COOKIE,openAdminSession,readUniqueAdminCookie} from '@/lib/admin-session.server';
 import {revokeAdminBackendSession} from '@/lib/admin-backend.server';
 
 export const runtime='nodejs';
@@ -25,7 +25,7 @@ export async function POST(request:NextRequest){
  const site=request.headers.get('sec-fetch-site');
  if(!origin||origin!==request.nextUrl.origin||
     (site!==null&&site!=='same-origin'&&site!=='none'))return unavailable();
- const token=openAdminSession(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
+ const token=openAdminSession(readUniqueAdminCookie(request.headers.get('cookie'),request.cookies.get(ADMIN_SESSION_COOKIE)?.value));
  if(!token)return unavailable();
  if(!await revokeAdminBackendSession(token)){
   return NextResponse.json({code:'LOGOUT_UNAVAILABLE'},
