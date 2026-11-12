@@ -9,7 +9,7 @@ const source=readFileSync(new URL('../src/lib/admin-session.server.ts',import.me
 const js=ts.transpileModule(source,{compilerOptions:{
   module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,
 }}).outputText;
-const {sealAdminSession,openAdminSession,ADMIN_SESSION_COOKIE}=
+const {sealAdminSession,openAdminSession,readUniqueAdminCookie,ADMIN_SESSION_COOKIE}=
   await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
 const token='A'.repeat(42)+'E';
 const now=1_800_000_000_000;
@@ -59,4 +59,17 @@ test('admin session fails closed on invalid key, bearer and expiry',()=>{
   if(previous===undefined)delete process.env.SERVICES_ADMIN_COOKIE_KEY;
   else process.env.SERVICES_ADMIN_COOKIE_KEY=previous;
  }
+});
+
+
+test('duplicate and malformed admin session cookie headers are denied',()=>{
+ const name=ADMIN_SESSION_COOKIE;
+ assert.equal(readUniqueAdminCookie(name+'=opaque','opaque'),'opaque');
+ assert.equal(readUniqueAdminCookie('other=1; '+name+'=opaque','opaque'),'opaque');
+ assert.equal(readUniqueAdminCookie(name+'=one; '+name+'=two','two'),null);
+ assert.equal(readUniqueAdminCookie(name+'=one; '+name+'=two','one'),null);
+ assert.equal(readUniqueAdminCookie(name+'-suffix=one','one'),null);
+ assert.equal(readUniqueAdminCookie(name+'=one',undefined),null);
+ assert.equal(readUniqueAdminCookie(null,'one'),null);
+ assert.equal(readUniqueAdminCookie('x'.repeat(8193),'one'),null);
 });
