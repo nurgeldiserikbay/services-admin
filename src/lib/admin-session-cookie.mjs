@@ -12,13 +12,15 @@ export function readAdminSessionCookie(header){
   if(typeof header!=='string'||Buffer.byteLength(header,'utf8')>MAX_COOKIE_HEADER_BYTES)
     return null;
   let found=null;
+  let seen=false;
   for(const segment of header.split(';')){
     const part=segment.trim();
     const separator=part.indexOf('=');
     if(separator<0)continue;
     if(part.slice(0,separator).trim()!==ADMIN_SESSION_COOKIE)continue;
     // Duplicate names are ambiguous and must never be resolved by first/last wins.
-    if(found!==null)return null;
+    if(seen)return null;
+    seen=true;
     const token=part.slice(separator+1);
     if(!TOKEN.test(token))return null;
     found=token;
