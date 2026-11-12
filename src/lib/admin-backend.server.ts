@@ -125,6 +125,9 @@ export async function revokeAdminBackendSession(bearer:unknown):Promise<boolean>
   if(response.body){
    try{void response.body.cancel().catch(()=>{});}catch{/* already closed */}
   }
-  return response.status===200;
+  // A cached or redirected logout acknowledgement cannot prove revocation.
+  const cacheControl=response.headers.get('cache-control')??'';
+  return response.status===200&&
+   /(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl);
  }catch{return false;}
 }
