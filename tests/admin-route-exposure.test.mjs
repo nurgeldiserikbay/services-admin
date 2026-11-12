@@ -16,11 +16,31 @@ test('no privileged admin HTTP route is accidentally mounted',()=>{
  const routes=walk(root)
   .filter(path=>/^(route|page)\.(tsx?|jsx?)$/.test(path.split(/[\\/]/).at(-1)))
   .map(path=>relative(root,path).replaceAll('\\','/')).sort();
- assert.deepEqual(routes,['api/health/route.ts','page.tsx'],
+ assert.deepEqual(routes,[
+  'api/auth/logout/route.ts',
+  'api/health/route.ts',
+  'api/moderation/cases/route.ts',
+  'moderation/page.tsx',
+  'page.tsx',
+ ],
   'A new admin page/API route requires an explicit security review and allowlist update');
 });
 
-test('the only mounted API endpoint remains a minimal unauthenticated liveness probe',()=>{
+test('privileged routes stay explicitly disabled without an approved BFF rollout',()=>{
+ for(const route of [
+  'api/auth/logout/route.ts',
+  'api/moderation/cases/route.ts',
+  'moderation/page.tsx',
+ ]){
+  const source=readFileSync(join(root,route),'utf8');
+  assert.match(source,/SERVICES_ADMIN_ENABLE_MODERATION_BFF/);
+  assert.match(source,/!==\s*'enabled'/);
+  assert.match(source,/openAdminSession/);
+  assert.doesNotMatch(source,/NEXT_PUBLIC_SERVICES_ADMIN_ENABLE_MODERATION_BFF/);
+ }
+});
+
+test('the only unauthenticated API endpoint remains a minimal liveness probe',()=>{
  const source=readFileSync(join(root,'api/health/route.ts'),'utf8');
  assert.match(source,/export function GET\(\)/);
  assert.match(source,/export function HEAD\(\)/);
