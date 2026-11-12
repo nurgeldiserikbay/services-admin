@@ -8,7 +8,7 @@ export const ADMIN_SESSION_COOKIE='__Host-services_admin_session';
 const TOKEN=/^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/;
 const MAX_COOKIE_HEADER_BYTES=4096;
 
-export function readAdminSessionCookie(header:unknown):string|null{
+export function readAdminSessionCookie(header){
   if(typeof header!=='string'||Buffer.byteLength(header,'utf8')>MAX_COOKIE_HEADER_BYTES)
     return null;
   let found:string|null=null;
