@@ -2,7 +2,7 @@ import {cookies,headers} from 'next/headers';
 import {notFound} from 'next/navigation';
 import {ModerationQueue} from '@/components/ModerationQueue';
 import {AdminLogoutButton} from '@/components/AdminLogoutButton';
-import {ADMIN_SESSION_COOKIE,openAdminSession} from '@/lib/admin-session.server';
+import {ADMIN_SESSION_COOKIE,openAdminSession,readUniqueAdminCookie} from '@/lib/admin-session.server';
 import {fetchAdminModerationCases} from '@/lib/admin-backend.server';
 
 export const runtime='nodejs';
@@ -20,7 +20,7 @@ export default async function ModerationPage(){
  const site=requestHeaders.get('sec-fetch-site');
  if(site==='cross-site'||site==='same-site')notFound();
  const store=await cookies();
- const bearer=openAdminSession(store.get(ADMIN_SESSION_COOKIE)?.value);
+ const bearer=openAdminSession(readUniqueAdminCookie(requestHeaders.get('cookie'),store.get(ADMIN_SESSION_COOKIE)?.value));
  if(!bearer)notFound();
  const result=await fetchAdminModerationCases(bearer);
  if(!result)notFound();
