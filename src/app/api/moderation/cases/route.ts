@@ -12,7 +12,7 @@ const HEADERS={
  'X-Robots-Tag':'noindex, nofollow, noarchive',
  'X-Content-Type-Options':'nosniff',
  'Referrer-Policy':'no-referrer',
- 'Vary':'Cookie, Sec-Fetch-Site',
+ 'Vary':'Cookie, Origin, Sec-Fetch-Site',
 } as const;
 
 function deny():NextResponse{
@@ -28,7 +28,10 @@ function deny():NextResponse{
 export async function GET(request:NextRequest):Promise<NextResponse>{
  if(process.env.SERVICES_ADMIN_ENABLE_MODERATION_BFF!=='enabled')return deny();
  const site=request.headers.get('sec-fetch-site');
- if(site==='cross-site'||site==='same-site')return deny();
+ const origin=request.headers.get('origin');
+ // An Origin header is authoritative even when Fetch Metadata is missing or forged.
+ if((origin!==null&&origin!==request.nextUrl.origin)||
+    site==='cross-site'||site==='same-site')return deny();
  const token=openAdminSession(readUniqueAdminCookie(request.headers.get('cookie'),request.cookies.get(ADMIN_SESSION_COOKIE)?.value));
  if(!token)return deny();
  const data=await fetchAdminModerationCases(token);
