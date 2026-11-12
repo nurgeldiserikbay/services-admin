@@ -66,6 +66,11 @@ test('duplicate and malformed admin session cookie headers are denied',()=>{
  const name=ADMIN_SESSION_COOKIE;
  assert.equal(readUniqueAdminCookie(name+'=opaque','opaque'),'opaque');
  assert.equal(readUniqueAdminCookie('other=1; '+name+'=opaque','opaque'),'opaque');
+ assert.equal(readUniqueAdminCookie(name+'=opaque','different'),null);
+ assert.equal(readUniqueAdminCookie(name+'="opaque"','opaque'),null);
+ assert.equal(readUniqueAdminCookie(name+'=opaque%2Evalue','opaque.value'),null);
+ assert.equal(readUniqueAdminCookie(name+'=opaque value','opaque value'),null);
+ assert.equal(readUniqueAdminCookie(name+'=opaque; unrelated=x','opaque'), 'opaque');
  assert.equal(readUniqueAdminCookie(name+'=one; '+name+'=two','two'),null);
  assert.equal(readUniqueAdminCookie(name+'=one; '+name+'=two','one'),null);
  assert.equal(readUniqueAdminCookie(name+'-suffix=one','one'),null);
