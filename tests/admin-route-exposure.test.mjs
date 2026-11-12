@@ -46,3 +46,12 @@ test('the only unauthenticated API endpoint remains a minimal liveness probe',()
  assert.match(source,/export function HEAD\(\)/);
  assert.doesNotMatch(source,/DATABASE_URL|REDIS_URL|adminBearer|Authorization|process\.env|fetch\s*\(/i);
 });
+
+
+test('private moderation API denies cross-origin requests even without fetch metadata',()=>{
+ const source=readFileSync(join(root,'api/moderation/cases/route.ts'),'utf8');
+ assert.match(source,/request\.headers\.get\('origin'\)/);
+ assert.match(source,/origin!==null&&origin!==request\.nextUrl\.origin/);
+ assert.match(source,/site==='cross-site'\|\|site==='same-site'/);
+ assert.match(source,/'Vary':'Cookie, Origin, Sec-Fetch-Site'/);
+});
