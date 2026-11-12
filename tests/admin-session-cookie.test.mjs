@@ -11,6 +11,8 @@ test('admin session transport reads only the dedicated host-only cookie',()=>{
 test('admin session transport rejects duplicate or malformed cookies',()=>{
  for(const header of [
   `${ADMIN_SESSION_COOKIE}=${token}; ${ADMIN_SESSION_COOKIE}=${token}`,
+  `${ADMIN_SESSION_COOKIE}=invalid; ${ADMIN_SESSION_COOKIE}=${token}`,
+  `${ADMIN_SESSION_COOKIE}=${token}; ${ADMIN_SESSION_COOKIE}=invalid`,
   `${ADMIN_SESSION_COOKIE}=${'A'.repeat(42)}B`,
   `${ADMIN_SESSION_COOKIE}=${token}%00`,
   `${ADMIN_SESSION_COOKIE}=" ${token} "`,
