@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {ADMIN_SESSION_COOKIE,openAdminSession} from '@/lib/admin-session.server';
+import {ADMIN_SESSION_COOKIE,openAdminSession,readUniqueAdminCookie} from '@/lib/admin-session.server';
 import {fetchAdminModerationCases} from '@/lib/admin-backend.server';
 
 export const runtime='nodejs';
@@ -29,7 +29,7 @@ export async function GET(request:NextRequest):Promise<NextResponse>{
  if(process.env.SERVICES_ADMIN_ENABLE_MODERATION_BFF!=='enabled')return deny();
  const site=request.headers.get('sec-fetch-site');
  if(site==='cross-site'||site==='same-site')return deny();
- const token=openAdminSession(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
+ const token=openAdminSession(readUniqueAdminCookie(request.headers.get('cookie'),request.cookies.get(ADMIN_SESSION_COOKIE)?.value));
  if(!token)return deny();
  const data=await fetchAdminModerationCases(token);
  if(!data)return deny();
