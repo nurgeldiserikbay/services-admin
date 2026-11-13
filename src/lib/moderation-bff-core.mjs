@@ -37,16 +37,24 @@ export async function readAuthorizedModerationPage({
       const reader=response.body.getReader();
       const chunks=[];
       let total=0;
+      let complete=false;
       try{
         while(true){
           const {done,value}=await reader.read();
-          if(done)break;
+          if(done){complete=true;break;}
           if(!(value instanceof Uint8Array))throw new Error('invalid_chunk');
           total+=value.byteLength;
           if(total>32768)throw new Error('invalid_size');
           chunks.push(value);
         }
-      }finally{reader.releaseLock();}
+      }finally{
+        if(!complete){
+          // Reject oversized or malformed upstream data without leaving its
+          // response stream consuming resources after the request fails.
+          try{void reader.cancel().catch(()=>{});}catch{/* best effort */}
+        }
+        reader.releaseLock();
+      }
       body=Buffer.concat(chunks,total).toString('utf8');
     }else{
       // Test doubles may only implement text(); real fetch has a stream.
