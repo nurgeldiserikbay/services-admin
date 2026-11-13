@@ -12,7 +12,7 @@ const compiled=ts.transpileModule(source,{
  reportDiagnostics:true,
 });
 assert.deepEqual(compiled.diagnostics?.filter(d=>d.category===ts.DiagnosticCategory.Error),[]);
-const {validateModerationPayload,adminBackendOrigin,fetchAdminModerationCases}=await import(
+const {validateModerationPayload,adminBackendOrigin,fetchAdminModerationCases,revokeAdminBackendSession}=await import(
  'data:text/javascript;base64,'+Buffer.from(compiled.outputText).toString('base64')
 );
 
@@ -150,6 +150,42 @@ test('live transport rejects oversized streams, invalid UTF-8 and UTF-8 BOM',asy
    assert.equal(await fetchAdminModerationCases(token),null);
    if(bytes.length>32768)assert.equal(cancelled,true);
   }
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
+ }
+});
+
+test('backend logout confirms only a non-cacheable HTTP 200 response',async()=>{
+ const previousOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+ const previousFetch=globalThis.fetch;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  let observed;
+  globalThis.fetch=async(url,options)=>{
+   observed={url,options};
+   return new Response('{}',{status:200,headers:{'cache-control':'private, no-store'}});
+  };
+  assert.equal(await revokeAdminBackendSession(token),true);
+  assert.equal(observed.url,'https://api.example.test/v1/admin/session/logout');
+  assert.equal(observed.options.method,'POST');
+  assert.equal(observed.options.headers.Authorization,'Bearer '+token);
+  assert.equal(observed.options.cache,'no-store');
+  assert.equal(observed.options.credentials,'omit');
+  assert.equal(observed.options.redirect,'error');
+  for(const options of [
+   {status:200,headers:{'cache-control':'public, max-age=60'}},
+   {status:202,headers:{'cache-control':'no-store'}},
+   {status:401,headers:{'cache-control':'no-store'}},
+  ]){
+   globalThis.fetch=async()=>new Response('{}',options);
+   assert.equal(await revokeAdminBackendSession(token),false);
+  }
+  let called=false;
+  globalThis.fetch=async()=>{called=true;throw Error('unexpected call');};
+  assert.equal(await revokeAdminBackendSession('invalid'),false);
+  assert.equal(called,false);
  }finally{
   globalThis.fetch=previousFetch;
   if(previousOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
