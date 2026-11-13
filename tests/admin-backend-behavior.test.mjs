@@ -126,3 +126,33 @@ test('live moderation transport fails closed on cacheable, malformed and unautho
   else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
  }
 });
+
+test('live transport rejects oversized streams, invalid UTF-8 and UTF-8 BOM',async()=>{
+ const previousOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+ const previousFetch=globalThis.fetch;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  const valid=new TextEncoder().encode(JSON.stringify({items:[row()]}));
+  const bom=Uint8Array.from([0xef,0xbb,0xbf,...valid]);
+  const invalid=Uint8Array.from([0xff,...valid]);
+  for(const bytes of [bom,invalid,new Uint8Array(32769)]){
+   let cancelled=false;
+   const stream=new ReadableStream({
+    start(controller){controller.enqueue(bytes);},
+    cancel(){cancelled=true;},
+   });
+   globalThis.fetch=async()=>new Response(stream,{
+    status:200,headers:{
+     'content-type':'application/json',
+     'cache-control':'private, no-store',
+    },
+   });
+   assert.equal(await fetchAdminModerationCases(token),null);
+   if(bytes.length>32768)assert.equal(cancelled,true);
+  }
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
+ }
+});
