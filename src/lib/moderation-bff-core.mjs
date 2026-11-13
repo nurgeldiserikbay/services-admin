@@ -32,6 +32,10 @@ export async function readAuthorizedModerationPage({
     const cacheControl=response.headers?.get('cache-control')??'';
     if(!/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl))
       throw new Error('invalid_cache_policy');
+    // Privileged moderation results must not be accepted from cacheable upstream responses.
+    const cacheControl=response.headers?.get('cache-control')??'';
+    if(!/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl))
+      throw new Error('invalid_cache_policy');
     const length=response.headers?.get('content-length');
     if(length!==null&&length!==undefined&&(!/^\d+$/.test(length)||Number(length)>32768))
       throw new Error('invalid_size');
