@@ -107,6 +107,10 @@ export async function fetchAdminModerationCases(
     let offset=0;
     for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
     const body=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+    // Disallow a UTF-8 BOM: privileged JSON must be an unambiguous UTF-8 document.
+    // TextDecoder normally strips BOMs, which could conceal an upstream mismatch.
+    if(bytes.length>=3&&bytes[0]===0xef&&bytes[1]===0xbb&&bytes[2]===0xbf)
+      return null;
     const payload:unknown=JSON.parse(body);
     return validateModerationPayload(payload);
   }catch{return null;}
