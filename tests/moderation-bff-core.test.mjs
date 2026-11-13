@@ -106,3 +106,39 @@ test('BFF parses a valid streamed JSON page across chunk boundaries',async()=>{
   backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
  }),{items:[row]});
 });
+
+test('BFF cancels a rejected oversized stream without reading further chunks',async()=>{
+ let reads=0;
+ let cancelled=0;
+ let released=0;
+ const reader={
+  async read(){
+   reads++;
+   return {done:false,value:new Uint8Array(32769)};
+  },
+  async cancel(){cancelled++;},
+  releaseLock(){released++;},
+ };
+ const response={status:200,headers:{get:key=>key==='content-type'?'application/json':null},
+  body:{getReader:()=>reader}};
+ await assert.rejects(readAuthorizedModerationPage({
+  backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
+ }),/admin_read_unavailable/);
+ assert.equal(reads,1);
+ assert.equal(cancelled,1);
+ assert.equal(released,1);
+});
+
+test('BFF cancels malformed streamed chunks before releasing the reader',async()=>{
+ let cancelled=0;
+ const response={status:200,headers:{get:key=>key==='content-type'?'application/json':null},
+  body:{getReader:()=>({
+   async read(){return {done:false,value:'not-bytes'};},
+   async cancel(){cancelled++;},
+   releaseLock(){},
+  })}};
+ await assert.rejects(readAuthorizedModerationPage({
+  backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
+ }),/admin_read_unavailable/);
+ assert.equal(cancelled,1);
+});
