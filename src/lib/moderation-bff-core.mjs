@@ -59,7 +59,7 @@ export async function readAuthorizedModerationPage({
         }
         reader.releaseLock();
       }
-      body=Buffer.concat(chunks,total).toString('utf8');
+      body=new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks,total));
     }else{
       // Test doubles may only implement text(); real fetch has a stream.
       body=await response.text();
