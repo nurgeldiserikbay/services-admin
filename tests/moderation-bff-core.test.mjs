@@ -119,6 +119,34 @@ test('BFF parses a valid streamed JSON page across chunk boundaries',async()=>{
  }),{items:[row]});
 });
 
+test('BFF rejects malformed UTF-8 rather than silently replacing bytes',async()=>{
+ // Invalid byte sequence inside an otherwise valid JSON string.
+ const prefix=new TextEncoder().encode('{"items":[],"note":"');
+ const suffix=new TextEncoder().encode('"}');
+ const bytes=new Uint8Array(prefix.length+1+suffix.length);
+ bytes.set(prefix);
+ bytes[prefix.length]=0xff;
+ bytes.set(suffix,prefix.length+1);
+ let released=0;
+ const response={
+  status:200,
+  headers:{get:key=>key==='content-type'?'application/json':
+   key==='cache-control'?'no-store':null},
+  body:{getReader:()=>({
+   async read(){
+    if(this.finished)return {done:true};
+    this.finished=true;
+    return {done:false,value:bytes};
+   },
+   releaseLock(){released++;},
+  })},
+ };
+ await assert.rejects(readAuthorizedModerationPage({
+  backendOrigin:origin,adminToken:token,fetchImpl:async()=>response,
+ }),/admin_read_unavailable/);
+ assert.equal(released,1);
+});
+
 test('BFF cancels a rejected oversized stream without reading further chunks',async()=>{
  let reads=0;
  let cancelled=0;
