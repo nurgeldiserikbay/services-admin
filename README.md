@@ -97,3 +97,18 @@ accept raw admin bearer tokens. Backend roles, scopes, session expiry and
 MFA freshness must remain authoritative for each privileged read. Before
 production rollout, verify both repos' CI, database migrations, runtime
 integration, negative-path tests and secure cookie behavior on HTTPS.
+
+
+## Moderation payload contract (2026-11-13)
+
+The mounted `src/lib/admin-backend.server.ts` transport validates an exact
+redacted upstream envelope: `{items: [...]}` with at most 50 rows. Each
+row must contain **only** `id`, `subjectKind`, `state`, and `createdAt`.
+Unexpected properties and non-plain objects are rejected rather than silently
+stripped. UUID uniqueness is case-insensitive; timestamps must be canonical
+millisecond UTC strings. The backend remains authoritative for access checks.
+
+The standalone `moderation-bff-core.mjs` is a separate, currently unmounted
+testable transport; its unit tests do **not** by themselves prove the mounted
+Next.js route's integration. Run the actual admin and backend CI suites and
+HTTPS runtime tests before enabling privileged feature flags.
