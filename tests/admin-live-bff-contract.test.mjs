@@ -36,6 +36,14 @@ test('live moderation transport is bounded and refuses cacheable upstream respon
  assert.match(transport,/reader\.cancel\(\)/);
 });
 
+test('backend origin configuration rejects URL normalization surprises',()=>{
+ const transport=source('src/lib/admin-backend.server.ts');
+ assert.match(transport,/url\.href!==raw&&url\.href!==raw\+'\/'/);
+ assert.match(transport,/url\.username\|\|url\.password/);
+ assert.match(transport,/url\.search\|\|url\.hash/);
+ assert.match(transport,/url\.protocol!=='https:'/);
+});
+
 test('privileged logout requires backend revocation before clearing cookie',()=>{
  const route=source('src/app/api/auth/logout/route.ts');
  const revocation=route.indexOf('await revokeAdminBackendSession(token)');
