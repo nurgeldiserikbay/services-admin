@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,randomBytes} from 'node:crypto';
 import ts from 'typescript';
 
 // Exercise the actual TypeScript transport, not a duplicate test implementation.
@@ -12,7 +12,7 @@ const compiled=ts.transpileModule(source,{
  reportDiagnostics:true,
 });
 assert.deepEqual(compiled.diagnostics?.filter(d=>d.category===ts.DiagnosticCategory.Error),[]);
-const {validateModerationPayload,adminBackendOrigin}=await import(
+const {validateModerationPayload,adminBackendOrigin,fetchAdminModerationCases}=await import(
  'data:text/javascript;base64,'+Buffer.from(compiled.outputText).toString('base64')
 );
 
@@ -63,4 +63,66 @@ test('live backend origin parser refuses path, credentials and normalization',()
   'https://api.example.test:443',
   'http://api.example.test',
  ])assert.equal(adminBackendOrigin(value),null,value);
+});
+
+const token=randomBytes(32).toString('base64url');
+const response=(payload,options={})=>new Response(
+ JSON.stringify(payload),{
+  status:options.status??200,
+  headers:{
+   'content-type':options.contentType??'application/json',
+   'cache-control':options.cacheControl??'private, no-store',
+  },
+ }
+);
+
+test('live moderation transport sends a private authorized request and validates response',async()=>{
+ const previousOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+ const previousFetch=globalThis.fetch;
+ let observed;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  const item=row();
+  globalThis.fetch=async(url,options)=>{
+   observed={url,options};
+   return response({items:[item]});
+  };
+  assert.deepEqual(await fetchAdminModerationCases(token),{items:[item]});
+  assert.equal(observed.url,'https://api.example.test/v1/admin/moderation/cases');
+  assert.equal(observed.options.method,'GET');
+  assert.equal(observed.options.headers.Authorization,'Bearer '+token);
+  assert.equal(observed.options.cache,'no-store');
+  assert.equal(observed.options.redirect,'error');
+  assert.equal(observed.options.credentials,'omit');
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
+ }
+});
+
+test('live moderation transport fails closed on cacheable, malformed and unauthorized responses',async()=>{
+ const previousOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+ const previousFetch=globalThis.fetch;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  const item=row();
+  for(const upstream of [
+   response({items:[item]},{cacheControl:'public, max-age=3600'}),
+   response({items:[item]},{status:401}),
+   response({items:[{...item,email:'private@example.test'}]}),
+   response({items:[]},{contentType:'text/html'}),
+  ]){
+   globalThis.fetch=async()=>upstream;
+   assert.equal(await fetchAdminModerationCases(token),null);
+  }
+  let called=false;
+  globalThis.fetch=async()=>{called=true;throw Error('unexpected network call');};
+  assert.equal(await fetchAdminModerationCases('invalid'),null);
+  assert.equal(called,false);
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
+ }
 });
