@@ -26,12 +26,18 @@ const STATES=new Set(['triage','in_review','decision','appeal','closed']);
 
 /** Never forward an unvalidated backend payload to a browser-facing BFF. */
 export function validateModerationPayload(payload:unknown):{items:ModerationCase[]}|null{
-  if(!payload||typeof payload!=='object'||!('items' in payload)||
+  if(!payload||typeof payload!=='object'||Array.isArray(payload)||
+     Object.getPrototypeOf(payload)!==Object.prototype||
+     Object.keys(payload).length!==1||!Object.hasOwn(payload,'items')||
      !Array.isArray(payload.items)||payload.items.length>50)return null;
   const items:ModerationCase[]=[];
   const seen=new Set<string>();
   for(const item of payload.items){
-    if(!item||typeof item!=='object')return null;
+    if(!item||typeof item!=='object'||Array.isArray(item)||
+       Object.getPrototypeOf(item)!==Object.prototype||
+       Object.keys(item).length!==4||
+       !['id','subjectKind','state','createdAt'].every(key=>Object.hasOwn(item,key)))
+      return null;
     const row=item as Record<string,unknown>;
     if(typeof row.id!=='string'||!UUID.test(row.id)||seen.has(row.id.toLowerCase())||
        typeof row.subjectKind!=='string'||!KINDS.has(row.subjectKind)||
