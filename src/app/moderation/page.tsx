@@ -18,7 +18,10 @@ export default async function ModerationPage(){
  if(process.env.SERVICES_ADMIN_ENABLE_MODERATION_BFF!=='enabled')notFound();
  const requestHeaders=await headers();
  const site=requestHeaders.get('sec-fetch-site');
- if(site!==null&&site!=='same-origin'&&site!=='none')notFound();
+ // Browser document navigations do not require an Origin header. Reject
+ // origin-bearing requests rather than trusting proxy-controlled host values.
+ if(requestHeaders.has('origin')||
+    (site!==null&&site!=='same-origin'&&site!=='none'))notFound();
  const store=await cookies();
  const bearer=openAdminSession(readUniqueAdminCookie(requestHeaders.get('cookie'),store.get(ADMIN_SESSION_COOKIE)?.value));
  if(!bearer)notFound();
