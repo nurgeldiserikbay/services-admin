@@ -39,7 +39,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
             <td><time dateTime={item.createdAt}>
               {new Date(item.createdAt).toLocaleString('kk-KZ',{timeZone:'UTC'})} UTC
             </time></td>
-            <td><code title={item.id} aria-label={`Жазба идентификаторы: ${item.id}`}>{item.id.slice(0,8)}…</code></td>
+            <td><code className={styles.caseId} aria-label={`Жазба идентификаторы: ${item.id}`}>{item.id}</code></td>
           </tr>)}</tbody>
         </table>
       </div>}
