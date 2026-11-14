@@ -95,6 +95,12 @@ jobs:
             test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged' "http://127.0.0.1:3103$route")" = 404
             test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Origin: https://attacker.example' "http://127.0.0.1:3103$route")" = 404
           done
+          # Private server-rendered documents reject origin-bearing requests.
+          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/moderation)" = 404
+          # An Authorization header or URL parameter is not a browser admin session.
+          for route in /moderation /api/moderation/cases; do
+            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer forged' "http://127.0.0.1:3103$route?token=forged")" = 404
+          done
           # Unknown Fetch Metadata values must never grant access to privileged routes.
           for site in cross-site same-site invalid; do
             for route in /moderation /api/moderation/cases; do
