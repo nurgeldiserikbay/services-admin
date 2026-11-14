@@ -31,7 +31,7 @@ export async function GET(request:NextRequest):Promise<NextResponse>{
  const origin=request.headers.get('origin');
  // An Origin header is authoritative even when Fetch Metadata is missing or forged.
  if((origin!==null&&origin!==request.nextUrl.origin)||
-    site==='cross-site'||site==='same-site')return deny();
+    (site!==null&&site!=='same-origin'&&site!=='none'))return deny();
  const token=openAdminSession(readUniqueAdminCookie(request.headers.get('cookie'),request.cookies.get(ADMIN_SESSION_COOKIE)?.value));
  if(!token)return deny();
  const data=await fetchAdminModerationCases(token);
