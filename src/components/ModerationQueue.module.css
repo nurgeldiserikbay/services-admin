@@ -16,3 +16,5 @@
 @media(max-width:600px){.queue{border-radius:14px;padding:18px}.table th,.table td{padding:12px}}
 
 .scopeNote{margin:0 0 20px;color:#536a78;font-size:.875rem;line-height:1.6;max-width:75ch}
+
+.caseId{display:inline-block;max-width:22rem;overflow-wrap:anywhere;white-space:normal;user-select:text}
