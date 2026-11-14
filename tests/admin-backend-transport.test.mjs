@@ -17,9 +17,11 @@ test('admin transport is server-side and does not introduce public credential ro
   assert.doesNotMatch(page,/fetchAdminModerationCases|Authorization/);
 });
 
-test('moderation transport validates every row and strips unexpected fields',()=>{
+test('moderation transport rejects unexpected fields instead of silently stripping them',()=>{
   assert.match(transport,/export function validateModerationPayload/);
   assert.match(transport,/seen\.has\(row\.id\.toLowerCase\(\)\)/);
+  assert.match(transport,/Object\.keys\(item\)\.length!==4/);
+  assert.match(transport,/Object\.keys\(payload\)\.length!==1/);
   assert.match(transport,/KINDS\.has\(row\.subjectKind\)/);
   assert.match(transport,/STATES\.has\(row\.state\)/);
   assert.match(transport,/Number\.isFinite\(Date\.parse\(row\.createdAt\)\)/);
