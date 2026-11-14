@@ -21,15 +21,15 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
         <p className={styles.eyebrow}>Services Admin</p>
         <h2 id="moderation-heading">Модерация кезегі</h2>
       </div>
-      <span className={styles.count} aria-label={`Өтінім саны: ${items.length}`}>
-        {items.length} жазба
+      <span className={styles.count} aria-label={`Осы беттегі жазба саны: ${items.length}`}>
+        {items.length} жазба (осы бет)
       </span>
     </div>
     {items.length===0?
-      <p className={styles.empty} role="status">Қаралатын жазбалар жоқ.</p>:
+      <p className={styles.empty} role="status">Бұл бетте көрсетілетін жазба жоқ. Басқа рұқсат етілген жазбалар болуы мүмкін.</p>:
       <div className={styles.scroll}>
         <table className={styles.table}>
-          <caption className={styles.caption}>Рұқсат етілген модерация жазбалары</caption>
+          <caption className={styles.caption}>Осы беттегі рұқсат етілген модерация жазбалары</caption>
           <thead><tr><th scope="col">Түрі</th><th scope="col">Күйі</th>
             <th scope="col">Тіркелген уақыты</th><th scope="col">ID</th></tr></thead>
           <tbody>{items.map(item=><tr key={item.id}>
