@@ -18,7 +18,7 @@ export default async function ModerationPage(){
  if(process.env.SERVICES_ADMIN_ENABLE_MODERATION_BFF!=='enabled')notFound();
  const requestHeaders=await headers();
  const site=requestHeaders.get('sec-fetch-site');
- if(site==='cross-site'||site==='same-site')notFound();
+ if(site!==null&&site!=='same-origin'&&site!=='none')notFound();
  const store=await cookies();
  const bearer=openAdminSession(readUniqueAdminCookie(requestHeaders.get('cookie'),store.get(ADMIN_SESSION_COOKIE)?.value));
  if(!bearer)notFound();
