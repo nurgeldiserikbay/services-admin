@@ -25,6 +25,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
         {items.length} жазба (осы бет)
       </span>
     </div>
+    <p className={styles.scopeNote}>Бұл тек ағымдағы рұқсат етілген бет. Жалпы кезек саны мен басқа жазбалар көрсетілмейді. Шешім қабылдау әрекеттері бұл көріністе қолжетімсіз.</p>
     {items.length===0?
       <p className={styles.empty} role="status">Бұл бетте көрсетілетін жазба жоқ. Басқа рұқсат етілген жазбалар болуы мүмкін.</p>:
       <div className={styles.scroll}>
@@ -38,7 +39,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
             <td><time dateTime={item.createdAt}>
               {new Date(item.createdAt).toLocaleString('kk-KZ',{timeZone:'UTC'})} UTC
             </time></td>
-            <td><code aria-label={`Жазба идентификаторы: ${item.id}`}>{item.id.slice(0,8)}…</code></td>
+            <td><code title={item.id} aria-label={`Жазба идентификаторы: ${item.id}`}>{item.id.slice(0,8)}…</code></td>
           </tr>)}</tbody>
         </table>
       </div>}
