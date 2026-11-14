@@ -103,6 +103,14 @@ jobs:
           done
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X POST -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/api/auth/logout)" = 404
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://attacker.example' http://127.0.0.1:3103/api/auth/logout)" = 404
+          # Logout is state-changing: reject cross-site and unknown fetch metadata.
+          for site in cross-site same-site invalid; do
+            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X POST -H 'Origin: http://127.0.0.1:3103' -H "Sec-Fetch-Site: $site" http://127.0.0.1:3103/api/auth/logout)" = 404
+          done
+          # Duplicate cookie names must not be interpreted as one valid session.
+          for route in /moderation /api/moderation/cases; do
+            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged; __Host-services-admin-session=forged' "http://127.0.0.1:3103$route")" = 404
+          done
       - name: Print admin server diagnostics on failure
         if: failure()
         run: |
