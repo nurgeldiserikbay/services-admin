@@ -64,3 +64,13 @@ test('moderation filters remain local to already authorized items',()=>{
  assert.match(queue,/aria-label="Жазба күйі бойынша сүзгі"/);
  assert.doesNotMatch(queue,/fetch\(|localStorage|sessionStorage|Authorization|Bearer|dangerouslySetInnerHTML/);
 });
+
+test('moderation filter reset and result announcements stay scoped to the current page',()=>{
+ const queue=readFileSync(new URL('../src/components/ModerationQueue.tsx',import.meta.url),'utf8');
+ assert.match(queue,/setKind\('all'\);setState\('all'\)/);
+ assert.match(queue,/Сүзгілерді тазалау/);
+ assert.match(queue,/aria-live="polite"/);
+ assert.match(queue,/aria-atomic="true"/);
+ assert.match(queue,/visible\.length} \/ \{items\.length}/);
+ assert.doesNotMatch(queue,/totalCount|globalCount|fetch\(/);
+});
