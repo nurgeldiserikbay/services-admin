@@ -85,3 +85,11 @@ test('moderation date ordering only sorts the already authorized page',()=>{
  assert.match(queue,/setOrder\('newest'\)/);
  assert.doesNotMatch(queue,/fetch\(|sortBy.*api|localStorage/);
 });
+
+test('scrollable moderation table is keyboard focusable with a visible focus ring',()=>{
+ const queue=readFileSync(new URL('../src/components/ModerationQueue.tsx',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../src/components/ModerationQueue.module.css',import.meta.url),'utf8');
+ assert.match(queue,/role="region" aria-label="Модерация жазбалары кестесі" tabIndex=\{0\}/);
+ assert.match(css,/\.scroll:focus-visible\{/);
+ assert.match(css,/outline:3px solid/);
+});
