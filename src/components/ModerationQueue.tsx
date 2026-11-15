@@ -18,11 +18,14 @@ const states={
  * This component deliberately performs no fetch and grants no permissions.
  */
 export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
+  const [query,setQuery]=useState('');
   const [kind,setKind]=useState('all');
   const [state,setState]=useState('all');
   const [order,setOrder]=useState<'newest'|'oldest'>('newest');
+  const normalizedQuery=query.trim().toLowerCase();
   const visible=items.filter(item=>(kind==='all'||item.subjectKind===kind)&&
-    (state==='all'||item.state===state)).sort((a,b)=>{
+    (state==='all'||item.state===state)&&
+    (normalizedQuery===''||item.id.toLowerCase().includes(normalizedQuery))).sort((a,b)=>{
       const byDate=Date.parse(a.createdAt)-Date.parse(b.createdAt);
       const ordered=order==='newest'?-byDate:byDate;
       return ordered||a.id.localeCompare(b.id);
@@ -39,6 +42,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
     </div>
     <p className={styles.scopeNote}>Бұл тек ағымдағы рұқсат етілген бет. Жалпы кезек саны мен басқа жазбалар көрсетілмейді. Шешім қабылдау әрекеттері бұл көріністе қолжетімсіз.</p>
     {items.length>0&&<div className={styles.filters}>
+      <label className={styles.filterLabel}>Жазба ID іздеу <input className={styles.filterSelect} type="search" aria-label="Осы беттегі жазба ID бойынша іздеу" autoComplete="off" maxLength={36} value={query} onChange={event=>setQuery(event.target.value)} placeholder="UUID немесе оның бөлігі" /></label>
       <label className={styles.filterLabel}>Түрі <select className={styles.filterSelect} aria-label="Жазба түрі бойынша сүзгі" value={kind} onChange={event=>setKind(event.target.value)}>
         <option value="all">Барлығы</option>
         {Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}
@@ -51,7 +55,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
         <option value="newest">Алдымен жаңалары</option>
         <option value="oldest">Алдымен ескілері</option>
       </select></label>
-      {(kind!=='all'||state!=='all'||order!=='newest')&&<button className={styles.filterReset} type="button" onClick={()=>{setKind('all');setState('all');setOrder('newest');}}>
+      {(query!==''||kind!=='all'||state!=='all'||order!=='newest')&&<button className={styles.filterReset} type="button" onClick={()=>{setQuery('');setKind('all');setState('all');setOrder('newest');}}>
         Сүзгілерді тазалау
       </button>}
     </div>}
