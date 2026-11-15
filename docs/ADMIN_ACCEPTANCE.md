@@ -41,3 +41,7 @@ The backend's `src/modules/app.module.ts` imports `PlatformAdminModerationModule
 - Landing page is a restricted placeholder; the separate moderation workspace exists but is feature-flagged and has not passed full acceptance.
 - No CI result has been independently confirmed in this document.
 - Admin UI must remain fail-closed until authenticated server-side authorization is ready.
+
+## Logout acknowledgement hardening (2026-11-15)
+
+The server-only BFF logout transport now requires HTTP 200, `Cache-Control: no-store`, JSON content type, a bounded (128-byte) UTF-8 body and the exact object `{ "status": "revoked" }` before reporting successful backend revocation. A source-level regression test guards this contract. Commits: [`400937d`](https://github.com/nurgeldiserikbay/services-admin/commit/400937d168b6a7b4112369b8c1bf8539de9c63c0), [`0b89fc3`](https://github.com/nurgeldiserikbay/services-admin/commit/0b89fc3eebad30282cbb7a55dbec514ac7f621e8). Runtime and CI acceptance remain unverified.
