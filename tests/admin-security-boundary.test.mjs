@@ -104,3 +104,13 @@ test('case ID search only filters the current authorized page and bounds input',
  assert.match(queue,/setQuery\(''\)/);
  assert.doesNotMatch(queue,/fetch\(|localStorage|sessionStorage/);
 });
+
+test('privileged backend transport is restricted to server modules',()=>{
+ const transport=readFileSync(new URL('../src/lib/admin-backend.server.ts',import.meta.url),'utf8');
+ const session=readFileSync(new URL('../src/lib/admin-session.server.ts',import.meta.url),'utf8');
+ const queue=readFileSync(new URL('../src/components/ModerationQueue.tsx',import.meta.url),'utf8');
+ assert.match(transport,/^import 'server-only';/);
+ assert.match(session,/^import 'server-only';/);
+ assert.match(queue,/import type \{ModerationCase\} from '@\/lib\/admin-backend\.server'/);
+ assert.doesNotMatch(queue,/import \{(?:fetchAdminModerationCases|revokeAdminBackendSession)/);
+});
