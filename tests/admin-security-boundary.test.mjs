@@ -114,3 +114,15 @@ test('privileged backend transport is restricted to server modules',()=>{
  assert.match(queue,/import type \{ModerationCase\} from '@\/lib\/admin-backend\.server'/);
  assert.doesNotMatch(queue,/import \{(?:fetchAdminModerationCases|revokeAdminBackendSession)/);
 });
+
+test('logout requires exact bounded backend revocation acknowledgement',()=>{
+ const transport=readFileSync(new URL('../src/lib/admin-backend.server.ts',import.meta.url),'utf8');
+ const revoke=transport.slice(transport.indexOf('export async function revokeAdminBackendSession'));
+ assert.match(revoke,/response\.status!==200/);
+ assert.match(revoke,/content-type/);
+ assert.match(revoke,/Number\(length\)>128/);
+ assert.match(revoke,/total\+value\.byteLength>128/);
+ assert.match(revoke,/payload as \{status:unknown\}\)\.status==='revoked'/);
+ assert.match(revoke,/Object\.keys\(payload\)\.length===1/);
+ assert.doesNotMatch(revoke,/return response\.status===200&&/);
+});
