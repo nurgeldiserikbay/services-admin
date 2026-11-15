@@ -59,7 +59,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
     {items.length===0?
       <p className={styles.empty} role="status">Бұл бетте көрсетілетін жазба жоқ. Басқа рұқсат етілген жазбалар болуы мүмкін.</p>:
       visible.length===0?<p className={styles.empty} role="status">Бұл бетте таңдалған сүзгілерге сәйкес жазба жоқ.</p>:
-      <div className={styles.scroll}>
+      <div className={styles.scroll} role="region" aria-label="Модерация жазбалары кестесі" tabIndex={0}>
         <table className={styles.table}>
           <caption className={styles.caption}>Осы беттегі сүзгіден өткен {visible.length} модерация жазбасы</caption>
           <thead><tr><th scope="col">Түрі</th><th scope="col">Күйі</th>
