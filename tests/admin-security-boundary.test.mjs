@@ -122,7 +122,8 @@ test('logout requires exact bounded backend revocation acknowledgement',()=>{
  assert.match(revoke,/content-type/);
  assert.match(revoke,/Number\(length\)>128/);
  assert.match(revoke,/total\+value\.byteLength>128/);
- assert.match(revoke,/payload as \{status:unknown\}\)\.status==='revoked'/);
- assert.match(revoke,/Object\.keys\(payload\)\.length===1/);
+ assert.match(revoke,/const acknowledgement=new TextDecoder/);
+ assert.match(revoke,/acknowledgement\);/);
+ assert.doesNotMatch(revoke,/JSON\.parse\(/);
  assert.doesNotMatch(revoke,/return response\.status===200&&/);
 });
