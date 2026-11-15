@@ -1,3 +1,5 @@
+import 'server-only';
+
 /**
  * Server-side transport for future authenticated admin BFF handlers.
  * This module deliberately does not obtain or persist admin credentials.
