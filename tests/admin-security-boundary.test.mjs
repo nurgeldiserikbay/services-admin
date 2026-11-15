@@ -38,3 +38,17 @@ test('moderation workspace uses a page heading and server-only authorization gat
  assert.match(moderation,/if\(!result\)notFound\(\)/);
  assert.doesNotMatch(moderation,/localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
+
+test('moderation loading and error states do not disclose privileged diagnostics',()=>{
+ const loading=readFileSync(new URL('../src/app/moderation/loading.tsx',import.meta.url),'utf8');
+ const error=readFileSync(new URL('../src/app/moderation/error.tsx',import.meta.url),'utf8');
+ assert.match(loading,/role="status"/);
+ assert.match(loading,/aria-live="polite"/);
+ assert.match(loading,/aria-busy="true"/);
+ assert.match(loading,/<h1>/);
+ assert.match(error,/^'use client';/);
+ assert.match(error,/role="alert"/);
+ assert.match(error,/<h1>/);
+ assert.match(error,/onClick=\\{reset\\}/);
+ assert.doesNotMatch(loading+'\\n'+error,/error\\.message|error\\.stack|error\\.digest|process\\.env|Authorization|Bearer|localStorage|sessionStorage|dangerouslySetInnerHTML/);
+});
