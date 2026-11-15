@@ -26,3 +26,15 @@ test('unimplemented admin UI stays non-indexed and fail-closed',()=>{
  assert.match(page,/Доступ к данным и операциям не предоставляется/);
  assert.doesNotMatch(page,/localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
+
+test('moderation workspace uses a page heading and server-only authorization gate',()=>{
+ const moderation=readFileSync(new URL('../src/app/moderation/page.tsx',import.meta.url),'utf8');
+ const queue=readFileSync(new URL('../src/components/ModerationQueue.tsx',import.meta.url),'utf8');
+ assert.match(queue,/<h1 id="moderation-heading">/);
+ assert.match(queue,/aria-labelledby="moderation-heading"/);
+ assert.match(moderation,/SERVICES_ADMIN_ENABLE_MODERATION_BFF/);
+ assert.match(moderation,/openAdminSession/);
+ assert.match(moderation,/fetchAdminModerationCases\(bearer\)/);
+ assert.match(moderation,/if\(!result\)notFound\(\)/);
+ assert.doesNotMatch(moderation,/localStorage|sessionStorage|dangerouslySetInnerHTML/);
+});
