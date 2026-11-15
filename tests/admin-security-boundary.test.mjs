@@ -67,7 +67,7 @@ test('moderation filters remain local to already authorized items',()=>{
 
 test('moderation filter reset and result announcements stay scoped to the current page',()=>{
  const queue=readFileSync(new URL('../src/components/ModerationQueue.tsx',import.meta.url),'utf8');
- assert.match(queue,/setKind\('all'\);setState\('all'\);setOrder\('newest'\)/);
+ assert.match(queue,/setQuery\(''\);setKind\('all'\);setState\('all'\);setOrder\('newest'\)/);
  assert.match(queue,/Сүзгілерді тазалау/);
  assert.match(queue,/aria-live="polite"/);
  assert.match(queue,/aria-atomic="true"/);
@@ -92,4 +92,15 @@ test('scrollable moderation table is keyboard focusable with a visible focus rin
  assert.match(queue,/role="region" aria-label="Модерация жазбалары кестесі" tabIndex=\{0\}/);
  assert.match(css,/\.scroll:focus-visible\{/);
  assert.match(css,/outline:3px solid/);
+});
+
+test('case ID search only filters the current authorized page and bounds input',()=>{
+ const queue=readFileSync(new URL('../src/components/ModerationQueue.tsx',import.meta.url),'utf8');
+ assert.match(queue,/type="search"/);
+ assert.match(queue,/maxLength=\{36\}/);
+ assert.match(queue,/autoComplete="off"/);
+ assert.match(queue,/query\.trim\(\)\.toLowerCase\(\)/);
+ assert.match(queue,/item\.id\.toLowerCase\(\)\.includes\(normalizedQuery\)/);
+ assert.match(queue,/setQuery\(''\)/);
+ assert.doesNotMatch(queue,/fetch\(|localStorage|sessionStorage/);
 });
