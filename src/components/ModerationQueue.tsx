@@ -42,7 +42,11 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
         <option value="all">Барлығы</option>
         {Object.entries(states).map(([value,label])=><option key={value} value={value}>{label}</option>)}
       </select></label>
+      {(kind!=='all'||state!=='all')&&<button type="button" onClick={()=>{setKind('all');setState('all');}} style={{padding:'8px 12px',borderRadius:8,cursor:'pointer'}}>
+        Сүзгілерді тазалау
+      </button>}
     </div>}
+    {items.length>0&&<p role="status" aria-live="polite" aria-atomic="true">Осы бетте {visible.length} / {items.length} жазба көрсетілуде.</p>}
     {items.length===0?
       <p className={styles.empty} role="status">Бұл бетте көрсетілетін жазба жоқ. Басқа рұқсат етілген жазбалар болуы мүмкін.</p>:
       visible.length===0?<p className={styles.empty} role="status">Бұл бетте таңдалған сүзгілерге сәйкес жазба жоқ.</p>:
