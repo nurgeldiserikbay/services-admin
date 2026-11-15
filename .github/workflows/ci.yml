@@ -134,6 +134,26 @@ jobs:
               exit 1
             fi
           done
+          # Unsupported methods must not expose privileged data or session mutations.
+          for route in /api/moderation/cases /api/auth/logout; do
+            for method in PUT PATCH DELETE; do
+              test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X "$method" "http://127.0.0.1:3103$route")" = 405
+            done
+          done
+          # Logout must never accept GET, including same-origin and forged session cookies.
+          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged' http://127.0.0.1:3103/api/auth/logout)" = 405
+          # Repeated and oversized cookies must fail closed without a Set-Cookie side effect.
+          for route in /api/moderation/cases /api/auth/logout; do
+            if [ "$route" = /api/auth/logout ]; then method=POST; else method=GET; fi
+            for cookie in '__Host-services-admin-session=forged; __Host-services-admin-session=other' '__Host-services-admin-session=%66orged'; do
+              curl --connect-timeout 2 --max-time 5 --silent -D "$RUNNER_TEMP/admin-bad-cookie-headers.txt" -o /dev/null -X "$method" -H 'Origin: http://127.0.0.1:3103' -H "Cookie: $cookie" "http://127.0.0.1:3103$route"
+              grep -Eiq '^HTTP/[0-9.]+ 404' "$RUNNER_TEMP/admin-bad-cookie-headers.txt"
+              if grep -Eiq '^set-cookie:' "$RUNNER_TEMP/admin-bad-cookie-headers.txt"; then
+                echo "Denied malformed cookie mutated session: $route"
+                exit 1
+              fi
+            done
+          done
           # Duplicate cookie names must not be interpreted as one valid session.
           for route in /moderation /api/moderation/cases; do
             test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged; __Host-services-admin-session=forged' "http://127.0.0.1:3103$route")" = 404
