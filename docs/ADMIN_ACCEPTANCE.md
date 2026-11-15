@@ -45,3 +45,7 @@ The backend's `src/modules/app.module.ts` imports `PlatformAdminModerationModule
 ## Logout acknowledgement hardening (2026-11-15)
 
 The server-only BFF logout transport now requires HTTP 200, `Cache-Control: no-store`, JSON content type, a bounded (128-byte) UTF-8 body and the exact object `{ "status": "revoked" }` before reporting successful backend revocation. A source-level regression test guards this contract. Commits: [`400937d`](https://github.com/nurgeldiserikbay/services-admin/commit/400937d168b6a7b4112369b8c1bf8539de9c63c0), [`0b89fc3`](https://github.com/nurgeldiserikbay/services-admin/commit/0b89fc3eebad30282cbb7a55dbec514ac7f621e8). Runtime and CI acceptance remain unverified.
+
+### Strict logout JSON shape follow-up
+
+The logout acknowledgement parser now rejects duplicate JSON keys and unexpected fields at the wire level, instead of relying on `JSON.parse` (which retains the last duplicate key). See [`2d7667a`](https://github.com/nurgeldiserikbay/services-admin/commit/2d7667a08188c3a352869773c433232205351bf5) and [`dd717db`](https://github.com/nurgeldiserikbay/services-admin/commit/dd717dbc85103afeff32a27557d05e9946078a1e). CI and live HTTP acceptance remain pending.
