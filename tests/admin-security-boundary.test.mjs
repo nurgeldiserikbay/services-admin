@@ -52,3 +52,15 @@ test('moderation loading and error states do not disclose privileged diagnostics
  assert.match(error,/onClick=\{reset\}/);
  assert.doesNotMatch(loading+'\n'+error,/error\.message|error\.stack|error\.digest|process\.env|Authorization|Bearer|localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
+
+test('moderation filters remain local to already authorized items',()=>{
+ const queue=readFileSync(new URL('../src/components/ModerationQueue.tsx',import.meta.url),'utf8');
+ assert.match(queue,/^'use client';/);
+ assert.match(queue,/items\.filter\(/);
+ assert.match(queue,/item\.subjectKind===kind/);
+ assert.match(queue,/item\.state===state/);
+ assert.match(queue,/visible\.map\(/);
+ assert.match(queue,/aria-label="Жазба түрі бойынша сүзгі"/);
+ assert.match(queue,/aria-label="Жазба күйі бойынша сүзгі"/);
+ assert.doesNotMatch(queue,/fetch\(|localStorage|sessionStorage|Authorization|Bearer|dangerouslySetInnerHTML/);
+});
