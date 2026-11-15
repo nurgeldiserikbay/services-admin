@@ -67,10 +67,21 @@ test('moderation filters remain local to already authorized items',()=>{
 
 test('moderation filter reset and result announcements stay scoped to the current page',()=>{
  const queue=readFileSync(new URL('../src/components/ModerationQueue.tsx',import.meta.url),'utf8');
- assert.match(queue,/setKind\('all'\);setState\('all'\)/);
+ assert.match(queue,/setKind\('all'\);setState\('all'\);setOrder\('newest'\)/);
  assert.match(queue,/Сүзгілерді тазалау/);
  assert.match(queue,/aria-live="polite"/);
  assert.match(queue,/aria-atomic="true"/);
  assert.match(queue,/visible\.length} \/ \{items\.length}/);
  assert.doesNotMatch(queue,/totalCount|globalCount|fetch\(/);
+});
+
+test('moderation date ordering only sorts the already authorized page',()=>{
+ const queue=readFileSync(new URL('../src/components/ModerationQueue.tsx',import.meta.url),'utf8');
+ assert.match(queue,/items\.filter\(/);
+ assert.match(queue,/\.sort\(\(a,b\)=>/);
+ assert.match(queue,/Date\.parse\(a\.createdAt\)-Date\.parse\(b\.createdAt\)/);
+ assert.match(queue,/a\.id\.localeCompare\(b\.id\)/);
+ assert.match(queue,/Тіркелген уақыты бойынша сұрыптау/);
+ assert.match(queue,/setOrder\('newest'\)/);
+ assert.doesNotMatch(queue,/fetch\(|sortBy.*api|localStorage/);
 });
