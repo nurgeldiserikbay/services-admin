@@ -19,7 +19,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
     <div className={styles.heading}>
       <div>
         <p className={styles.eyebrow}>Services Admin</p>
-        <h2 id="moderation-heading">Модерация кезегі</h2>
+        <h1 id="moderation-heading">Модерация кезегі</h1>
       </div>
       <span className={styles.count} aria-label={`Осы беттегі жазба саны: ${items.length}`}>
         {items.length} жазба (осы бет)
