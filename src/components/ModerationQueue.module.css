@@ -1,6 +1,6 @@
 .queue{width:min(100%,1100px);margin:0 auto;padding:clamp(20px,4vw,42px);background:#fff;border:1px solid #dfe9eb;border-radius:22px;box-shadow:0 12px 40px #19354b0c}
 .heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px}
-.heading h2{font-size:clamp(1.4rem,3vw,2rem);margin:6px 0 0;letter-spacing:-.035em}
+.heading h1{font-size:clamp(1.4rem,3vw,2rem);margin:6px 0 0;letter-spacing:-.035em}
 .eyebrow{margin:0;color:#167b72;font-size:.75rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
 .count{background:#e9f6f3;color:#14675e;padding:9px 14px;border-radius:999px;font-weight:700;font-size:.85rem}
 .empty{padding:40px 20px;text-align:center;border:1px dashed #cadbdc;border-radius:14px;color:#607585}
@@ -18,3 +18,12 @@
 .scopeNote{margin:0 0 20px;color:#536a78;font-size:.875rem;line-height:1.6;max-width:75ch}
 
 .caseId{display:inline-block;max-width:22rem;overflow-wrap:anywhere;white-space:normal;user-select:text}
+
+.filters{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:16px 0}
+.filterLabel{display:grid;gap:6px;font-size:.875rem;font-weight:650;color:#385663}
+.filterSelect{min-height:44px;min-width:150px;padding:8px 12px;border:1px solid #a9bdc2;border-radius:9px;background:#fff;color:#173543;font:inherit}
+.filterReset{min-height:44px;padding:8px 14px;border:1px solid #a9bdc2;border-radius:9px;background:#f5faf9;color:#173543;font:inherit;font-weight:650;cursor:pointer}
+.filterReset:hover{background:#e9f6f3}
+.filterSelect:focus-visible,.filterReset:focus-visible{outline:3px solid #167b72;outline-offset:3px}
+.resultCount{font-size:.875rem;color:#536a78;margin:8px 0 16px}
+@media(max-width:600px){.filters{align-items:stretch}.filterLabel{flex:1 1 100%}.filterSelect,.filterReset{width:100%}}
