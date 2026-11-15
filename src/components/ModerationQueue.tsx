@@ -1,3 +1,6 @@
+'use client';
+
+import {useState} from 'react';
 import type {ModerationCase} from '@/lib/admin-backend.server';
 import styles from './ModerationQueue.module.css';
 
@@ -10,11 +13,15 @@ const states={
 } as const;
 
 /**
- * Server-renderable, read-only view. Data must be obtained by an authenticated
+ * Read-only, client-filterable view of backend-authorized cases. Data must be obtained by an authenticated
  * server BFF after session/MFA/scope verification; never pass bearer to props.
  * This component deliberately performs no fetch and grants no permissions.
  */
 export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
+  const [kind,setKind]=useState('all');
+  const [state,setState]=useState('all');
+  const visible=items.filter(item=>(kind==='all'||item.subjectKind===kind)&&
+    (state==='all'||item.state===state));
   return <section className={styles.queue} aria-labelledby="moderation-heading">
     <div className={styles.heading}>
       <div>
@@ -26,14 +33,25 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
       </span>
     </div>
     <p className={styles.scopeNote}>Бұл тек ағымдағы рұқсат етілген бет. Жалпы кезек саны мен басқа жазбалар көрсетілмейді. Шешім қабылдау әрекеттері бұл көріністе қолжетімсіз.</p>
+    {items.length>0&&<div style={{display:'flex',gap:12,flexWrap:'wrap',margin:'16px 0'}}>
+      <label>Түрі <select aria-label="Жазба түрі бойынша сүзгі" value={kind} onChange={event=>setKind(event.target.value)}>
+        <option value="all">Барлығы</option>
+        {Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}
+      </select></label>
+      <label>Күйі <select aria-label="Жазба күйі бойынша сүзгі" value={state} onChange={event=>setState(event.target.value)}>
+        <option value="all">Барлығы</option>
+        {Object.entries(states).map(([value,label])=><option key={value} value={value}>{label}</option>)}
+      </select></label>
+    </div>}
     {items.length===0?
       <p className={styles.empty} role="status">Бұл бетте көрсетілетін жазба жоқ. Басқа рұқсат етілген жазбалар болуы мүмкін.</p>:
+      visible.length===0?<p className={styles.empty} role="status">Бұл бетте таңдалған сүзгілерге сәйкес жазба жоқ.</p>:
       <div className={styles.scroll}>
         <table className={styles.table}>
-          <caption className={styles.caption}>Осы беттегі рұқсат етілген модерация жазбалары</caption>
+          <caption className={styles.caption}>Осы беттегі сүзгіден өткен {visible.length} модерация жазбасы</caption>
           <thead><tr><th scope="col">Түрі</th><th scope="col">Күйі</th>
             <th scope="col">Тіркелген уақыты</th><th scope="col">ID</th></tr></thead>
-          <tbody>{items.map(item=><tr key={item.id}>
+          <tbody>{visible.map(item=><tr key={item.id}>
             <td>{labels[item.subjectKind]}</td>
             <td><span className={styles.state}>{states[item.state]}</span></td>
             <td><time dateTime={item.createdAt}>
