@@ -27,6 +27,15 @@ Source of truth: [Services master checklist](https://github.com/nurgeldiserikbay
 3. **Acceptance:** test owner/admin/operator/auditor permissions, TOTP replay and revocation, moderation audit, CSRF/IDOR, no-store headers, responsive/accessibility states, real PostgreSQL and browser E2E.
 4. **Evidence:** link passing GitHub Actions run and exact commit to the master checklist; only then check boxes.
 
+
+## Verified backend HTTP contract gap (2026-11-15)
+
+The backend's `src/modules/app.module.ts` imports `PlatformAdminModerationModule`. Its `src/modules/admin/admin-moderation.module.ts` registers only `PlatformModerationReadController` and `PlatformAdminLogoutController`; **no admin MFA login controller is registered there**. The backend does contain `loginAdminWithProvisionedTotp` in `src/modules/admin/admin-mfa-login.ts`, but that function explicitly requires a **trusted primary-factor assertion** (`staffId` and `authenticatedAt`), a server-side TOTP decryption-key resolver and a 32-byte session pepper. A browser-supplied staff ID or timestamp is not such an assertion.
+
+**Do not implement an admin login form that sends a user-selected staff ID, a browser-provided primary-auth timestamp, or a raw backend bearer to the browser.** The missing dependency is a backend-authenticated primary-factor proof and a documented private admin MFA login HTTP contract. After that exists, implement a server-only BFF login exchange that validates its response, seals the bearer in the existing `__Host-services-admin-session` AES-GCM cookie, enforces origin/CSRF controls and tests expiration, lockout, replay, logout and role changes against migrated PostgreSQL. Until then the admin landing must stay fail-closed and the moderation BFF feature flag default-off.
+
+**Backend rollout dependencies:** `SERVICES_ENABLE_PLATFORM_ADMIN_LOGOUT_HTTP=enabled` is independently required by `PlatformAdminLogoutService`; `SERVICES_ADMIN_ENABLE_MODERATION_BFF=enabled` only gates the admin Next.js app and cannot enable backend routes or authenticate anyone.
+
 ## Release blockers
 
 - Landing page is a restricted placeholder; the separate moderation workspace exists but is feature-flagged and has not passed full acceptance.
