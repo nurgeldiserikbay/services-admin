@@ -135,12 +135,47 @@ export async function revokeAdminBackendSession(bearer:unknown):Promise<boolean>
    cache:'no-store',credentials:'omit',redirect:'error',
    signal:AbortSignal.timeout(5000),
   });
-  if(response.body){
-   try{void response.body.cancel().catch(()=>{});}catch{/* already closed */}
-  }
-  // A cached or redirected logout acknowledgement cannot prove revocation.
   const cacheControl=response.headers.get('cache-control')??'';
-  return response.status===200&&
-   /(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl);
+  const contentType=response.headers.get('content-type')??'';
+  const length=response.headers.get('content-length');
+  // A status-only acknowledgement does not prove the backend revoked the
+  // requested session. Require its exact, non-cacheable success contract.
+  if(response.status!==200||
+     !/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl)||
+     !/^application\/json(?:\s*;|\s*$)/i.test(contentType)||
+     (length!==null&&(!/^\d+$/.test(length)||Number(length)>128))){
+   if(response.body){
+    try{void response.body.cancel().catch(()=>{});}catch{/* already closed */}
+   }
+   return false;
+  }
+  if(!response.body)return false;
+  const reader=response.body.getReader();
+  const chunks:Uint8Array[]=[];
+  let total=0,complete=false;
+  try{
+   while(true){
+    const {done,value}=await reader.read();
+    if(done){complete=true;break;}
+    if(!(value instanceof Uint8Array)||total+value.byteLength>128)return false;
+    total+=value.byteLength;
+    chunks.push(value);
+   }
+  }finally{
+   if(!complete){
+    try{void reader.cancel().catch(()=>{});}catch{/* stream may already be closed */}
+   }
+   reader.releaseLock();
+  }
+  const bytes=new Uint8Array(total);
+  let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  if(total>=3&&bytes[0]===0xef&&bytes[1]===0xbb&&bytes[2]===0xbf)return false;
+  const payload:unknown=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+  return !!payload&&typeof payload==='object'&&!Array.isArray(payload)&&
+   Object.getPrototypeOf(payload)===Object.prototype&&
+   Object.keys(payload).length===1&&
+   Object.hasOwn(payload,'status')&&
+   (payload as {status:unknown}).status==='revoked';
  }catch{return false;}
 }
