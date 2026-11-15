@@ -49,6 +49,6 @@ test('moderation loading and error states do not disclose privileged diagnostics
  assert.match(error,/^'use client';/);
  assert.match(error,/role="alert"/);
  assert.match(error,/<h1>/);
- assert.match(error,/onClick=\\{reset\\}/);
- assert.doesNotMatch(loading+'\\n'+error,/error\\.message|error\\.stack|error\\.digest|process\\.env|Authorization|Bearer|localStorage|sessionStorage|dangerouslySetInnerHTML/);
+ assert.match(error,/onClick=\{reset\}/);
+ assert.doesNotMatch(loading+'\n'+error,/error\.message|error\.stack|error\.digest|process\.env|Authorization|Bearer|localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
