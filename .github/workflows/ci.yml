@@ -120,6 +120,12 @@ jobs:
             else
               curl --connect-timeout 2 --max-time 5 --silent -D "$RUNNER_TEMP/admin-denied-headers.txt" -o "$RUNNER_TEMP/admin-denied-body.txt" "http://127.0.0.1:3103$route"
             fi
+            grep -Eiq '^HTTP/[0-9.]+ 404' "$RUNNER_TEMP/admin-denied-headers.txt"
+            grep -Eiq '^content-type:.*application/json' "$RUNNER_TEMP/admin-denied-headers.txt"
+            if grep -Eiq '^set-cookie:' "$RUNNER_TEMP/admin-denied-headers.txt"; then
+              echo "Denied admin API unexpectedly set a cookie: $route"
+              exit 1
+            fi
             grep -Eiq '^cache-control:.*no-store' "$RUNNER_TEMP/admin-denied-headers.txt"
             grep -Eiq '^x-robots-tag:.*noindex' "$RUNNER_TEMP/admin-denied-headers.txt"
             grep -Eiq '^x-content-type-options:.*nosniff' "$RUNNER_TEMP/admin-denied-headers.txt"
