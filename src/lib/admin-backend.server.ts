@@ -171,11 +171,9 @@ export async function revokeAdminBackendSession(bearer:unknown):Promise<boolean>
   let offset=0;
   for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
   if(total>=3&&bytes[0]===0xef&&bytes[1]===0xbb&&bytes[2]===0xbf)return false;
-  const payload:unknown=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
-  return !!payload&&typeof payload==='object'&&!Array.isArray(payload)&&
-   Object.getPrototypeOf(payload)===Object.prototype&&
-   Object.keys(payload).length===1&&
-   Object.hasOwn(payload,'status')&&
-   (payload as {status:unknown}).status==='revoked';
+  // Match the entire wire representation, not just JSON.parse's last
+  // duplicate property: {"status":"failed","status":"revoked"} must fail.
+  const acknowledgement=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  return /^\s*\{\s*"status"\s*:\s*"revoked"\s*\}\s*$/.test(acknowledgement);
  }catch{return false;}
 }
