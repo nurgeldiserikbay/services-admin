@@ -27,3 +27,5 @@
 .filterSelect:focus-visible,.filterReset:focus-visible{outline:3px solid #167b72;outline-offset:3px}
 .resultCount{font-size:.875rem;color:#536a78;margin:8px 0 16px}
 @media(max-width:600px){.filters{align-items:stretch}.filterLabel{flex:1 1 100%}.filterSelect,.filterReset{width:100%}}
+
+.scroll:focus-visible{outline:3px solid #167b72;outline-offset:3px;border-radius:6px}
