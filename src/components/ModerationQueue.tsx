@@ -20,8 +20,13 @@ const states={
 export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
   const [kind,setKind]=useState('all');
   const [state,setState]=useState('all');
+  const [order,setOrder]=useState<'newest'|'oldest'>('newest');
   const visible=items.filter(item=>(kind==='all'||item.subjectKind===kind)&&
-    (state==='all'||item.state===state));
+    (state==='all'||item.state===state)).sort((a,b)=>{
+      const byDate=Date.parse(a.createdAt)-Date.parse(b.createdAt);
+      const ordered=order==='newest'?-byDate:byDate;
+      return ordered||a.id.localeCompare(b.id);
+    });
   return <section className={styles.queue} aria-labelledby="moderation-heading">
     <div className={styles.heading}>
       <div>
@@ -42,7 +47,11 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
         <option value="all">Барлығы</option>
         {Object.entries(states).map(([value,label])=><option key={value} value={value}>{label}</option>)}
       </select></label>
-      {(kind!=='all'||state!=='all')&&<button className={styles.filterReset} type="button" onClick={()=>{setKind('all');setState('all');}}>
+      <label className={styles.filterLabel}>Уақыты <select className={styles.filterSelect} aria-label="Тіркелген уақыты бойынша сұрыптау" value={order} onChange={event=>setOrder(event.target.value as 'newest'|'oldest')}>
+        <option value="newest">Алдымен жаңалары</option>
+        <option value="oldest">Алдымен ескілері</option>
+      </select></label>
+      {(kind!=='all'||state!=='all'||order!=='newest')&&<button className={styles.filterReset} type="button" onClick={()=>{setKind('all');setState('all');setOrder('newest');}}>
         Сүзгілерді тазалау
       </button>}
     </div>}
