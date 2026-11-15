@@ -33,20 +33,20 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
       </span>
     </div>
     <p className={styles.scopeNote}>Бұл тек ағымдағы рұқсат етілген бет. Жалпы кезек саны мен басқа жазбалар көрсетілмейді. Шешім қабылдау әрекеттері бұл көріністе қолжетімсіз.</p>
-    {items.length>0&&<div style={{display:'flex',gap:12,flexWrap:'wrap',margin:'16px 0'}}>
-      <label>Түрі <select aria-label="Жазба түрі бойынша сүзгі" value={kind} onChange={event=>setKind(event.target.value)}>
+    {items.length>0&&<div className={styles.filters}>
+      <label className={styles.filterLabel}>Түрі <select className={styles.filterSelect} aria-label="Жазба түрі бойынша сүзгі" value={kind} onChange={event=>setKind(event.target.value)}>
         <option value="all">Барлығы</option>
         {Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}
       </select></label>
-      <label>Күйі <select aria-label="Жазба күйі бойынша сүзгі" value={state} onChange={event=>setState(event.target.value)}>
+      <label className={styles.filterLabel}>Күйі <select className={styles.filterSelect} aria-label="Жазба күйі бойынша сүзгі" value={state} onChange={event=>setState(event.target.value)}>
         <option value="all">Барлығы</option>
         {Object.entries(states).map(([value,label])=><option key={value} value={value}>{label}</option>)}
       </select></label>
-      {(kind!=='all'||state!=='all')&&<button type="button" onClick={()=>{setKind('all');setState('all');}} style={{padding:'8px 12px',borderRadius:8,cursor:'pointer'}}>
+      {(kind!=='all'||state!=='all')&&<button className={styles.filterReset} type="button" onClick={()=>{setKind('all');setState('all');}}>
         Сүзгілерді тазалау
       </button>}
     </div>}
-    {items.length>0&&<p role="status" aria-live="polite" aria-atomic="true">Осы бетте {visible.length} / {items.length} жазба көрсетілуде.</p>}
+    {items.length>0&&<p className={styles.resultCount} role="status" aria-live="polite" aria-atomic="true">Осы бетте {visible.length} / {items.length} жазба көрсетілуде.</p>}
     {items.length===0?
       <p className={styles.empty} role="status">Бұл бетте көрсетілетін жазба жоқ. Басқа рұқсат етілген жазбалар болуы мүмкін.</p>:
       visible.length===0?<p className={styles.empty} role="status">Бұл бетте таңдалған сүзгілерге сәйкес жазба жоқ.</p>:
