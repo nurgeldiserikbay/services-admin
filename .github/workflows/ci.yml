@@ -113,6 +113,21 @@ jobs:
           for site in cross-site same-site invalid; do
             test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X POST -H 'Origin: http://127.0.0.1:3103' -H "Sec-Fetch-Site: $site" http://127.0.0.1:3103/api/auth/logout)" = 404
           done
+          # Unauthenticated privileged API responses must not be cached or indexed.
+          for route in /api/moderation/cases /api/auth/logout; do
+            if [ "$route" = /api/auth/logout ]; then
+              curl --connect-timeout 2 --max-time 5 --silent -D "$RUNNER_TEMP/admin-denied-headers.txt" -o "$RUNNER_TEMP/admin-denied-body.txt" -X POST -H 'Origin: http://127.0.0.1:3103' "http://127.0.0.1:3103$route"
+            else
+              curl --connect-timeout 2 --max-time 5 --silent -D "$RUNNER_TEMP/admin-denied-headers.txt" -o "$RUNNER_TEMP/admin-denied-body.txt" "http://127.0.0.1:3103$route"
+            fi
+            grep -Eiq '^cache-control:.*no-store' "$RUNNER_TEMP/admin-denied-headers.txt"
+            grep -Eiq '^x-robots-tag:.*noindex' "$RUNNER_TEMP/admin-denied-headers.txt"
+            grep -Eiq '^x-content-type-options:.*nosniff' "$RUNNER_TEMP/admin-denied-headers.txt"
+            if grep -Eiq 'token|bearer|secret|stack' "$RUNNER_TEMP/admin-denied-body.txt"; then
+              echo "Sensitive details in denied admin API response: $route"
+              exit 1
+            fi
+          done
           # Duplicate cookie names must not be interpreted as one valid session.
           for route in /moderation /api/moderation/cases; do
             test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged; __Host-services-admin-session=forged' "http://127.0.0.1:3103$route")" = 404
