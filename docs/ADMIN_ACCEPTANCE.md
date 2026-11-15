@@ -3,7 +3,7 @@
 Source of truth: [Services master checklist](https://github.com/nurgeldiserikbay/services-back/blob/main/docs/MASTER_CHECKLIST.md), section **Admin**. Do not mark items complete without a reproducible acceptance run and commit/CI evidence.
 
 ## Current verified observation (2026-11-15)
-`src/app/page.tsx` is an intentional fail-closed restricted-workspace placeholder. No functional admin workspace can be accepted on the basis of that page. The backend MFA implementation and security tests are not evidence of a completed admin UI.
+`src/app/page.tsx` is an intentional fail-closed landing page, **not the entire admin application**. `src/app/moderation/page.tsx` already implements a feature-flagged, server-rendered moderation workspace with server-only session validation, backend case fetching and logout. It is gated by `SERVICES_ADMIN_ENABLE_MODERATION_BFF=enabled` and denies unauthenticated or cross-site document requests. Functional acceptance still requires verified backend permissions, authenticated flows and CI/E2E evidence.
 
 ## Acceptance gates
 
@@ -17,18 +17,18 @@ Source of truth: [Services master checklist](https://github.com/nurgeldiserikbay
 | Moderation and authorization | Audited moderation endpoints, IDOR checks and role-specific UI controls | Not accepted |
 | Security audit trail | Successful/failed action events, redaction, immutable audit storage and retention verification | Unverified |
 | HTTP security headers | Built Next.js response assertions, CSP and cache/noindex checks | Unverified |
-| Admin UI functional acceptance | Authenticated MFA login, session expiry/logout, dashboard, moderation flows, loading/error/empty states, mobile and keyboard UX | Not implemented in placeholder |
+| Admin UI functional acceptance | Authenticated MFA login, session expiry/logout, dashboard, moderation flows, loading/error/empty states, mobile and keyboard UX | Moderation workspace prepared behind feature flag; full acceptance unverified |
 | Admin PostgreSQL and E2E tests | CI-backed migrated PostgreSQL integration plus browser E2E | Unverified |
 
 ## Delivery sequence
 
 1. **Contract and threat boundary:** agree admin login/session endpoints and cookie/CSRF policy; map backend permissions to frontend screens. Never put privileged bearer tokens in browser localStorage or expose server secrets.
-2. **Functional admin workspace:** implement server-validated session gate, explicit logout, role-aware navigation and moderation screens with API permission enforcement. Keep the placeholder until an authenticated path is proven safe.
+2. **Functional admin workspace:** verify the existing server-validated moderation route and logout; complete missing authenticated login, role-aware navigation and action-level moderation acceptance. Keep the landing placeholder and feature flag until the full path is proven safe.
 3. **Acceptance:** test owner/admin/operator/auditor permissions, TOTP replay and revocation, moderation audit, CSRF/IDOR, no-store headers, responsive/accessibility states, real PostgreSQL and browser E2E.
 4. **Evidence:** link passing GitHub Actions run and exact commit to the master checklist; only then check boxes.
 
 ## Release blockers
 
-- Restricted placeholder is not a usable admin panel.
+- Landing page is a restricted placeholder; the separate moderation workspace exists but is feature-flagged and has not passed full acceptance.
 - No CI result has been independently confirmed in this document.
 - Admin UI must remain fail-closed until authenticated server-side authorization is ready.
