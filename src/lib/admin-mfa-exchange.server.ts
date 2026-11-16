@@ -77,8 +77,8 @@ export async function exchangeTrustedAdminMfa(
   if(response.status!==200||response.headers.has('content-range')||
      !/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cache)||
      /(?:^|,)\s*(?:public|s-maxage\s*=)/i.test(cache)||
-     !/^application\/json(?:\s*;|\s*$)/i.test(contentType)||
-     (length!==null&&(!/^\d+$/.test(length)||Number(length)>512)))
+     !/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(contentType)||
+     (length!==null&&(!/^(?:0|[1-9][0-9]*)$/.test(length)||Number(length)>512)))
    return deny();
   if(!response.body)return null;
   const reader=response.body.getReader();
@@ -99,7 +99,12 @@ export async function exchangeTrustedAdminMfa(
   const bytes=new Uint8Array(size);let offset=0;
   for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
   if(size>=3&&bytes[0]===239&&bytes[1]===187&&bytes[2]===191)return null;
-  const payload:unknown=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+  const decoded=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  // The private backend contract is an exact two-field JSON object. Reject
+  // duplicate names, nested values and alternate representations before parse.
+  const strict=/^\{\s*"session_token"\s*:\s*"([A-Za-z0-9_-]{43})"\s*,\s*"expires_at"\s*:\s*([0-9]+)\s*\}$|^\{\s*"expires_at"\s*:\s*([0-9]+)\s*,\s*"session_token"\s*:\s*"([A-Za-z0-9_-]{43})"\s*\}$/;
+  if(!strict.test(decoded))return null;
+  const payload:unknown=JSON.parse(decoded);
   return validatePrivateMfaSession(payload,now);
  }catch{return null;}
 }
