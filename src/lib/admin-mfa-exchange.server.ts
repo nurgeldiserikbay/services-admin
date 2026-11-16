@@ -45,6 +45,12 @@ export async function exchangeTrustedAdminMfa(
  if(!origin||process.env.SERVICES_ADMIN_ENABLE_PRIVATE_MFA_EXCHANGE!=='enabled'||
     typeof access!=='string'||!/^[A-Za-z0-9+/]{43}=$/.test(access)||
     Buffer.from(access,'base64').toString('base64')!==access||
+    [
+     process.env.SERVICES_ADMIN_COOKIE_KEY,
+     process.env.PLATFORM_ADMIN_SESSION_HMAC_KEY,
+     process.env.ACCOUNT_SESSION_HMAC_KEY,
+     process.env.ACCOUNT_LOGIN_BFF_KEY,
+    ].some(peer=>typeof peer==='string'&&peer===access)||
     typeof accountSessionToken!=='string'||!TOKEN.test(accountSessionToken)||
     typeof totpCode!=='string'||!/^[0-9]{6}$/.test(totpCode)||
     !Number.isSafeInteger(now)||now<0)return null;
