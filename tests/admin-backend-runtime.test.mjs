@@ -5,7 +5,7 @@ import ts from 'typescript';
 
 // Execute the real TypeScript implementation rather than matching its source text.
 const source=readFileSync(new URL('../src/lib/admin-backend.server.ts',import.meta.url),'utf8');
-const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const js=ts.transpileModule(source.replace(/^import ['"]server-only['"];?\s*/m,''),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
 const {adminBackendOrigin,validateModerationPayload,fetchAdminModerationCases,revokeAdminBackendSession}=
   await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
 
@@ -49,8 +49,8 @@ test('admin backend origin requires HTTPS in production, including loopback',()=
   }
 });
 
-test('moderation response validator strips unknown fields and denies malformed rows',()=>{
-  assert.deepEqual(validateModerationPayload({items:[{...valid,privateContact:'secret'}]}),{items:[valid]});
+test('moderation response validator rejects unknown fields and malformed rows',()=>{
+  assert.equal(validateModerationPayload({items:[{...valid,privateContact:'secret'}]}),null);
   assert.deepEqual(validateModerationPayload({items:[]}),{items:[]});
   for(const item of [{...valid,createdAt:'2026-02-30T10:00:00.000Z'},
     {...valid,state:'approved'}, {...valid,id:'bad-id'}]){
@@ -94,7 +94,7 @@ test('moderation transport forwards canonical proof only to configured backend',
       assert.equal(options.cache,'no-store');
       assert.equal(options.credentials,'omit');
       assert.equal(options.redirect,'error');
-      return new Response(JSON.stringify({items:[{...valid,privateContact:'secret'}]}),
+      return new Response(JSON.stringify({items:[valid]}),
         {headers:{'content-type':'application/json','cache-control':'no-store'}});
     };
     assert.equal(await fetchAdminModerationCases('bad'),null);
@@ -281,7 +281,7 @@ test('backend logout requires valid proof and exact 200 status',async()=>{
    assert.equal(options.headers.Authorization,'Bearer '+token);
    assert.equal(options.credentials,'omit');
    assert.equal(options.redirect,'error');
-   return {status:200,body:null,headers:new Headers({'cache-control':'no-store'})};
+   return new Response('{"status":"revoked"}',{status:200,headers:{'cache-control':'no-store','content-type':'application/json'}});
   };
   assert.equal(await revokeAdminBackendSession('bad'),false);
   assert.equal(calls,0);
