@@ -112,3 +112,7 @@ The standalone `moderation-bff-core.mjs` is a separate, currently unmounted
 testable transport; its unit tests do **not** by themselves prove the mounted
 Next.js route's integration. Run the actual admin and backend CI suites and
 HTTPS runtime tests before enabling privileged feature flags.
+
+## Privileged rollout and staging acceptance
+
+Before enabling any admin BFF feature flag, follow the [privileged rollout, staging acceptance and rollback runbook](docs/admin-rollout-and-acceptance.md). It lists the required browser MFA, role-scoped backend authorization, cookie, CSRF, audit and manual sign-off gates. This document is a procedure, not proof that these gates are complete.
