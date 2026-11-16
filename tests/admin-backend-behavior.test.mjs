@@ -231,3 +231,29 @@ test('live moderation and logout reject truncated or overlong declared content l
   else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
  }
 });
+
+test('privileged upstream rejects content-range even when HTTP status is 200',async()=>{
+ const previousOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+ const previousFetch=globalThis.fetch;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  for(const [body,invoke] of [
+   [JSON.stringify({items:[row()]}),()=>fetchAdminModerationCases(token)],
+   ['{"status":"revoked"}',()=>revokeAdminBackendSession(token)],
+  ]){
+   globalThis.fetch=async()=>new Response(body,{
+    status:200,headers:{
+     'content-type':'application/json',
+     'cache-control':'private, no-store',
+     'content-range':'bytes 0-10/100',
+    },
+   });
+   const result=await invoke();
+   assert.ok(result===null||result===false,'partial representation must fail closed');
+  }
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
+ }
+});
