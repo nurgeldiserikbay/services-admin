@@ -7,7 +7,7 @@ import ts from 'typescript';
 // Exercise the actual TypeScript transport, not a duplicate test implementation.
 // This file has no runtime imports, so it can be transpiled into an ESM data URL.
 const source=readFileSync(new URL('../src/lib/admin-backend.server.ts',import.meta.url),'utf8');
-const compiled=ts.transpileModule(source,{
+const compiled=ts.transpileModule(source.replace(/^import ['"]server-only['"];?\s*/m,''),{
  compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022},
  reportDiagnostics:true,
 });
@@ -165,7 +165,7 @@ test('backend logout confirms only a non-cacheable HTTP 200 response',async()=>{
   let observed;
   globalThis.fetch=async(url,options)=>{
    observed={url,options};
-   return new Response('{}',{status:200,headers:{'cache-control':'private, no-store'}});
+   return new Response('{"status":"revoked"}',{status:200,headers:{'cache-control':'private, no-store','content-type':'application/json'}});
   };
   assert.equal(await revokeAdminBackendSession(token),true);
   assert.equal(observed.url,'https://api.example.test/v1/admin/session/logout');
