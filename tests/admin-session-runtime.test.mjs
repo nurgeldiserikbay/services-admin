@@ -100,3 +100,28 @@ test('admin session rejects malformed authenticated payload shape and expired co
   else process.env.SERVICES_ADMIN_COOKIE_KEY=previousKey;
  }
 });
+
+test('AES-GCM session rejects tampering in every authenticated envelope segment',()=>{
+ const prior=process.env.SERVICES_ADMIN_COOKIE_KEY;
+ try{
+  process.env.SERVICES_ADMIN_COOKIE_KEY=randomBytes(32).toString('base64');
+  const cookie=sealAdminSession(token,now+30_000,now);
+  const parts=cookie.split('.');
+  for(const index of [1,2,3]){
+   const changed=[...parts];
+   const first=changed[index][0];
+   changed[index]=(first==='A'?'B':'A')+changed[index].slice(1);
+   assert.equal(openAdminSession(changed.join('.'),now),null,'tampered segment '+index);
+  }
+  assert.equal(openAdminSession(cookie,now),token);
+  const nextKey=randomBytes(32).toString('base64');
+  process.env.SERVICES_ADMIN_COOKIE_KEY=nextKey;
+  assert.equal(openAdminSession(cookie,now),null,'old key cookie cannot survive rotation');
+  const rotated=sealAdminSession(token,now+30_000,now);
+  assert.equal(openAdminSession(rotated,now),token);
+  assert.notEqual(cookie,rotated);
+ }finally{
+  if(prior===undefined)delete process.env.SERVICES_ADMIN_COOKIE_KEY;
+  else process.env.SERVICES_ADMIN_COOKIE_KEY=prior;
+ }
+});
