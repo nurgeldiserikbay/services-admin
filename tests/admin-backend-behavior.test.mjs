@@ -257,3 +257,34 @@ test('privileged upstream rejects content-range even when HTTP status is 200',as
   else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
  }
 });
+
+test('privileged transports refuse contradictory public caching even with no-store',async()=>{
+ const previousOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+ const previousFetch=globalThis.fetch;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  for(const cacheControl of [
+   'public, no-store',
+   'private, no-store, public',
+   'no-store, s-maxage=60',
+  ]){
+   for(const [body,invoke] of [
+    [JSON.stringify({items:[row()]}),()=>fetchAdminModerationCases(token)],
+    ['{"status":"revoked"}',()=>revokeAdminBackendSession(token)],
+   ]){
+    globalThis.fetch=async()=>new Response(body,{
+     status:200,headers:{
+      'content-type':'application/json',
+      'cache-control':cacheControl,
+     },
+    });
+    const result=await invoke();
+    assert.ok(result===null||result===false,cacheControl+' must fail closed');
+   }
+  }
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
+ }
+});
