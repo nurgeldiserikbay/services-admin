@@ -78,8 +78,14 @@ jobs:
             echo 'Private logout UI leaked on unauthenticated moderation route'
             exit 1
           fi
-          # The server-rendered moderation workspace must also be fail-closed.
-          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/moderation)" = 404
+          # A production RSC response may return HTTP 200 for a notFound() boundary.
+          # Confirm that no privileged UI is rendered even if the status is 200.
+          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/moderation)" = 200
+          grep -q 'Бет табылмады' "$RUNNER_TEMP/admin-private-denied.html"
+          if grep -Eiq 'Жүйеден шығу|Модерация істері|ModerationQueue' "$RUNNER_TEMP/admin-private-denied.html"; then
+            echo 'Private moderation content leaked without a session'
+            exit 1
+          fi
           # Logout must not be exposed before authenticated session rollout.
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3102/api/auth/logout)" = 404
           # Private moderation BFF must stay unavailable without explicit rollout.
