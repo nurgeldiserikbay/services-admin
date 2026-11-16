@@ -1,4 +1,5 @@
 import 'server-only';
+import {adminBackendOrigin} from './admin-backend.server';
 
 /**
  * Strict validation of a trusted private MFA exchange acknowledgement.
@@ -29,4 +30,70 @@ export function validatePrivateMfaSession(
     !Number.isSafeInteger(expiry.value)||expiry.value<=now||
     expiry.value>now+MAX_TTL_MS)return null;
  return {token:token.value,expiresAt:expiry.value};
+}
+
+/**
+ * Internal-only transport. Do not expose via a browser route until the
+ * backend controller, vault-backed credentials and restricted ingress pass
+ * staging acceptance. Never return this result to a client component.
+ */
+export async function exchangeTrustedAdminMfa(
+ accountSessionToken:unknown,totpCode:unknown,now=Date.now(),
+):Promise<PrivateMfaSession|null>{
+ const origin=adminBackendOrigin(process.env.SERVICES_BACKEND_INTERNAL_ORIGIN);
+ const access=process.env.ADMIN_MFA_BFF_KEY;
+ if(!origin||process.env.SERVICES_ADMIN_ENABLE_PRIVATE_MFA_EXCHANGE!=='enabled'||
+    typeof access!=='string'||!/^[A-Za-z0-9+/]{43}=$/.test(access)||
+    Buffer.from(access,'base64').toString('base64')!==access||
+    typeof accountSessionToken!=='string'||!TOKEN.test(accountSessionToken)||
+    typeof totpCode!=='string'||!/^[0-9]{6}$/.test(totpCode)||
+    !Number.isSafeInteger(now)||now<0)return null;
+ try{
+  const response=await fetch(origin+'/v1/admin/private/mfa/verify',{
+   method:'POST',cache:'no-store',credentials:'omit',redirect:'error',
+   signal:AbortSignal.timeout(5000),
+   headers:{
+    'Content-Type':'application/json',
+    Accept:'application/json',
+    'X-Services-Admin-Mfa-Key':access,
+   },
+   body:JSON.stringify({
+    account_session_token:accountSessionToken,totp_code:totpCode,
+   }),
+  });
+  const deny=()=>{
+   if(response.body){try{void response.body.cancel().catch(()=>{});}catch{/* closed */}}
+   return null;
+  };
+  const cache=response.headers.get('cache-control')??'';
+  const contentType=response.headers.get('content-type')??'';
+  const length=response.headers.get('content-length');
+  if(response.status!==200||response.headers.has('content-range')||
+     !/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cache)||
+     /(?:^|,)\s*(?:public|s-maxage\s*=)/i.test(cache)||
+     !/^application\/json(?:\s*;|\s*$)/i.test(contentType)||
+     (length!==null&&(!/^\d+$/.test(length)||Number(length)>512)))
+   return deny();
+  if(!response.body)return null;
+  const reader=response.body.getReader();
+  const chunks:Uint8Array[]=[];
+  let size=0,complete=false;
+  try{
+   while(true){
+    const {done,value}=await reader.read();
+    if(done){complete=true;break;}
+    if(!(value instanceof Uint8Array)||size+value.byteLength>512)return null;
+    size+=value.byteLength;chunks.push(value);
+   }
+  }finally{
+   if(!complete){try{void reader.cancel().catch(()=>{});}catch{/* closed */}}
+   reader.releaseLock();
+  }
+  if(length!==null&&Number(length)!==size)return null;
+  const bytes=new Uint8Array(size);let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
+  if(size>=3&&bytes[0]===239&&bytes[1]===187&&bytes[2]===191)return null;
+  const payload:unknown=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+  return validatePrivateMfaSession(payload,now);
+ }catch{return null;}
 }
