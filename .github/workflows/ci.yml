@@ -35,6 +35,7 @@ jobs:
       - name: Verify installed dependencies match committed lockfile
         run: git diff --exit-code -- pnpm-lock.yaml
       - run: pnpm typecheck
+      - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
       - name: Smoke-test production admin liveness and deny unknown routes
