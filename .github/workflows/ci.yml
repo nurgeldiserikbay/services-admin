@@ -46,13 +46,6 @@ jobs:
           done
           curl --connect-timeout 2 --max-time 5 --fail --silent -o "$RUNNER_TEMP/admin-health.json" http://127.0.0.1:3102/api/health
           grep -q '"status":"ok"' "$RUNNER_TEMP/admin-health.json"
-          echo 'Health HEAD headers:'
-          curl --connect-timeout 2 --max-time 5 --silent -I http://127.0.0.1:3102/api/health
-          echo 'Health GET headers:'
-          curl --connect-timeout 2 --max-time 5 --silent -D - -o /dev/null http://127.0.0.1:3102/api/health
-          echo 'Unknown route status:'
-          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3102/ci-unknown-admin-route
-
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -I http://127.0.0.1:3102/api/health)" = 200
           curl --connect-timeout 2 --max-time 5 --fail --silent -I http://127.0.0.1:3102/api/health > "$RUNNER_TEMP/admin-health-head-headers.txt"
           grep -Eiq '^cache-control:.*no-store' "$RUNNER_TEMP/admin-health-head-headers.txt"
@@ -66,12 +59,6 @@ jobs:
           grep -Eiq '^x-robots-tag:.*noindex' "$RUNNER_TEMP/admin-health-headers.txt"
           grep -Eiq '^content-security-policy:.*frame-ancestors' "$RUNNER_TEMP/admin-health-headers.txt"
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/ci-unknown-admin-route)" = 404
-          echo 'Moderation denied status:'
-          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3102/moderation
-          echo 'Logout denied status:'
-          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:3102/api/auth/logout
-          echo 'Moderation API denied status:'
-          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3102/api/moderation/cases
           # Private workspace must never render logout UI without a valid session.
           curl --connect-timeout 2 --max-time 5 --silent http://127.0.0.1:3102/moderation > "$RUNNER_TEMP/admin-private-denied.html"
           if grep -q 'Жүйеден шығу' "$RUNNER_TEMP/admin-private-denied.html"; then
@@ -110,12 +97,6 @@ jobs:
           done
           curl --connect-timeout 2 --max-time 5 --fail --silent -o "$RUNNER_TEMP/admin-enabled-health.json" http://127.0.0.1:3103/api/health
           grep -q '"status":"ok"' "$RUNNER_TEMP/admin-enabled-health.json"
-          echo 'Enabled moderation page status:'
-          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3103/moderation
-          echo 'Enabled moderation API status:'
-          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3103/api/moderation/cases
-          echo 'Enabled logout status:'
-          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' -X POST -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/api/auth/logout
           # Enabled flag alone must not grant access; backend secrets and valid MFA session are absent.
           for route in /moderation /api/moderation/cases; do
             # Next.js RSC notFound() may be HTTP 200 with the denied page, unlike API 404.
@@ -135,18 +116,10 @@ jobs:
           done
           # Private server-rendered documents reject origin-bearing requests.
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/moderation)" = 200
-          echo 'Enabled post-baseline checks reached'
-          echo 'Forged query + bearer page status:'
-          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' -H 'Authorization: Bearer forged' 'http://127.0.0.1:3103/moderation?token=forged'
-          echo 'Forged query + bearer API status:'
-          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' -H 'Authorization: Bearer forged' 'http://127.0.0.1:3103/api/moderation/cases?token=forged'
           # An Authorization header or URL parameter is not a browser admin session.
           for route in /moderation /api/moderation/cases; do
             test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer forged' "http://127.0.0.1:3103$route?token=forged")" = $([ "$route" = /moderation ] && echo 200 || echo 404)
           done
-          echo 'Forged fetch metadata page status:'
-          for site in cross-site same-site invalid; do curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w "${site}:%{http_code}\n" -H "Sec-Fetch-Site: $site" http://127.0.0.1:3103/moderation; done
-          echo 'Enabled metadata tests reached'
           # Unknown Fetch Metadata values must never grant access to privileged routes.
           for site in cross-site same-site invalid; do
             for route in /moderation /api/moderation/cases; do
