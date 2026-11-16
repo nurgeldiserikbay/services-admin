@@ -52,7 +52,9 @@ export async function exchangeTrustedAdminMfa(
      process.env.ACCOUNT_LOGIN_BFF_KEY,
     ].some(peer=>typeof peer==='string'&&peer===access)||
     typeof accountSessionToken!=='string'||!TOKEN.test(accountSessionToken)||
-    typeof totpCode!=='string'||!/^[0-9]{6}$/.test(totpCode)||
+    // Forward bounded malformed codes: backend must persist failed MFA attempts.
+    // Reject only non-string or oversized input before network access.
+    typeof totpCode!=='string'||totpCode.length>16||
     !Number.isSafeInteger(now)||now<0)return null;
  try{
   const response=await fetch(origin+'/v1/admin/private/mfa/verify',{
