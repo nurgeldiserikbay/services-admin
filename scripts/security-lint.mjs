@@ -3,13 +3,16 @@ import {join,relative} from 'node:path';
 import process from 'node:process';
 import ts from 'typescript';
 
-const root='src';
+const root=process.argv[2]??'src';
 const extensions=/\.(?:ts|tsx|js|jsx)$/;
 const errors=[];
 function scan(dir){
   for(const entry of readdirSync(dir,{withFileTypes:true})){
     const path=join(dir,entry.name);
-    if(entry.isDirectory()){scan(path);continue;}
+    if(entry.isDirectory()){
+      if(['node_modules','.next','.git'].includes(entry.name))continue;
+      scan(path);continue;
+    }
     if(!entry.isFile()||!extensions.test(entry.name))continue;
     const source=ts.createSourceFile(path,readFileSync(path,'utf8'),ts.ScriptTarget.Latest,true,path.endsWith('x')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
     const report=(node,message)=>{
@@ -22,6 +25,7 @@ function scan(dir){
         if(ts.isIdentifier(node.expression)&&node.expression.text==='Function')report(node,'Function constructor is forbidden');
         if(ts.isPropertyAccessExpression(node.expression)&&node.expression.name.text==='write'&&ts.isIdentifier(node.expression.expression)&&node.expression.expression.text==='document')report(node,'document.write is forbidden');
       }
+      if(ts.isJsxAttribute(node)&&node.name.text==='dangerouslySetInnerHTML')report(node,'dangerouslySetInnerHTML is forbidden');
       if(ts.isNewExpression(node)&&ts.isIdentifier(node.expression)&&node.expression.text==='Function')report(node,'Function constructor is forbidden');
       if(ts.isPropertyAccessExpression(node)&&['innerHTML','outerHTML'].includes(node.name.text))report(node,'unsafe HTML DOM sink is forbidden');
       ts.forEachChild(node,visit);
