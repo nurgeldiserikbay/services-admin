@@ -19,15 +19,19 @@ function scan(dir){
       const {line,character}=source.getLineAndCharacterOfPosition(node.getStart(source));
       errors.push(`${relative('.',path)}:${line+1}:${character+1}: ${message}`);
     };
+    const forbiddenSink=(node)=>ts.isPropertyAccessExpression(node)&&['innerHTML','outerHTML'].includes(node.name.text)||
+      ts.isElementAccessExpression(node)&&ts.isStringLiteral(node.argumentExpression)&&['innerHTML','outerHTML'].includes(node.argumentExpression.text);
     function visit(node){
       if(ts.isCallExpression(node)){
         if(ts.isIdentifier(node.expression)&&node.expression.text==='eval')report(node,'eval is forbidden');
+        if(ts.isPropertyAccessExpression(node.expression)&&node.expression.name.text==='eval')report(node,'indirect eval is forbidden');
+        if(ts.isElementAccessExpression(node.expression)&&ts.isStringLiteral(node.expression.argumentExpression)&&node.expression.argumentExpression.text==='eval')report(node,'indirect eval is forbidden');
         if(ts.isIdentifier(node.expression)&&node.expression.text==='Function')report(node,'Function constructor is forbidden');
         if(ts.isPropertyAccessExpression(node.expression)&&node.expression.name.text==='write'&&ts.isIdentifier(node.expression.expression)&&node.expression.expression.text==='document')report(node,'document.write is forbidden');
       }
       if(ts.isJsxAttribute(node)&&node.name.text==='dangerouslySetInnerHTML')report(node,'dangerouslySetInnerHTML is forbidden');
       if(ts.isNewExpression(node)&&ts.isIdentifier(node.expression)&&node.expression.text==='Function')report(node,'Function constructor is forbidden');
-      if(ts.isPropertyAccessExpression(node)&&['innerHTML','outerHTML'].includes(node.name.text))report(node,'unsafe HTML DOM sink is forbidden');
+      if(forbiddenSink(node))report(node,'unsafe HTML DOM sink is forbidden');
       ts.forEachChild(node,visit);
     }
     visit(source);
