@@ -17,7 +17,7 @@ test('live backend moderation validator requires exact redacted envelope and row
  const transport=source('src/lib/admin-backend.server.ts');
  assert.match(transport,/Object\.keys\(payload\)\.length!==1/);
  assert.match(transport,/Object\.hasOwn\(payload,'items'\)/);
- assert.match(transport,/payload\.items\.length>50/);
+ assert.match(transport,/rawItems\.length>50/);
  assert.match(transport,/Object\.keys\(item\)\.length!==4/);
  assert.match(transport,/\['id','subjectKind','state','createdAt'\]\.every/);
  assert.match(transport,/seen\.has\(row\.id\.toLowerCase\(\)\)/);
