@@ -66,6 +66,12 @@ jobs:
           grep -Eiq '^x-robots-tag:.*noindex' "$RUNNER_TEMP/admin-health-headers.txt"
           grep -Eiq '^content-security-policy:.*frame-ancestors' "$RUNNER_TEMP/admin-health-headers.txt"
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:3102/ci-unknown-admin-route)" = 404
+          echo 'Moderation denied status:'
+          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3102/moderation
+          echo 'Logout denied status:'
+          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:3102/api/auth/logout
+          echo 'Moderation API denied status:'
+          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3102/api/moderation/cases
           # Private workspace must never render logout UI without a valid session.
           curl --connect-timeout 2 --max-time 5 --silent http://127.0.0.1:3102/moderation > "$RUNNER_TEMP/admin-private-denied.html"
           if grep -q 'Жүйеден шығу' "$RUNNER_TEMP/admin-private-denied.html"; then
