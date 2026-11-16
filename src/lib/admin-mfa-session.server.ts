@@ -1,6 +1,6 @@
 import 'server-only';
 import {exchangeTrustedAdminMfa} from './admin-mfa-exchange.server';
-import {sealAdminSession} from './admin-session.server';
+import {ADMIN_SESSION_COOKIE,sealAdminSession} from './admin-session.server';
 
 /**
  * Trusted server-only handoff: exchange account MFA for an admin grant and
@@ -25,4 +25,33 @@ export async function prepareAdminMfaCookie(
   const sealedValue=sealAdminSession(grant.token,grant.expiresAt,now);
   return {sealedValue,maxAgeSeconds};
  }catch{return null;}
+}
+
+/**
+ * Cookie policy for the eventual trusted MFA completion handler.
+ * This helper only constructs options; it does not mount an HTTP route.
+ */
+export function adminMfaCookieDirective(prepared:unknown):{
+ name:typeof ADMIN_SESSION_COOKIE;
+ value:string;
+ options:{httpOnly:true;secure:true;sameSite:'strict';path:'/';maxAge:number};
+}|null{
+ if(!prepared||typeof prepared!=='object'||Array.isArray(prepared)||
+    Object.getPrototypeOf(prepared)!==Object.prototype)return null;
+ const fields=Object.getOwnPropertyDescriptors(prepared);
+ if(Reflect.ownKeys(prepared).length!==2||
+    !Object.hasOwn(fields,'sealedValue')||
+    !Object.hasOwn(fields,'maxAgeSeconds'))return null;
+ const sealed=fields.sealedValue;
+ const age=fields.maxAgeSeconds;
+ if(!sealed||!age||!Object.hasOwn(sealed,'value')||
+    !Object.hasOwn(age,'value')||!sealed.enumerable||!age.enumerable||
+    typeof sealed.value!=='string'||sealed.value.length>512||
+    !/^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,400}\.[A-Za-z0-9_-]{22}$/.test(sealed.value)||
+    !Number.isSafeInteger(age.value)||age.value<1||age.value>900)return null;
+ return {
+  name:ADMIN_SESSION_COOKIE,
+  value:sealed.value,
+  options:{httpOnly:true,secure:true,sameSite:'strict',path:'/',maxAge:age.value},
+ };
 }
