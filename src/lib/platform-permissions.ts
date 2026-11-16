@@ -30,6 +30,8 @@ export function canDisplayPlatformAction(
   now:number,
 ):boolean{
   if(!verifiedClaims || typeof verifiedClaims!=='object' ||
+     Array.isArray(verifiedClaims) ||
+     !['role','sessionExpiresAt','mfaVerifiedAt'].every(key=>Object.hasOwn(verifiedClaims,key)) ||
      !Number.isSafeInteger(now) || now<0 ||
      !Number.isSafeInteger(verifiedClaims.sessionExpiresAt) ||
      verifiedClaims.sessionExpiresAt<0 ||
