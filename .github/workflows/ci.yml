@@ -118,15 +118,26 @@ jobs:
           curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' -X POST -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/api/auth/logout
           # Enabled flag alone must not grant access; backend secrets and valid MFA session are absent.
           for route in /moderation /api/moderation/cases; do
-            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' "http://127.0.0.1:3103$route")" = 404
-            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged' "http://127.0.0.1:3103$route")" = 404
-            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Origin: https://attacker.example' "http://127.0.0.1:3103$route")" = 404
+            # Next.js RSC notFound() may be HTTP 200 with the denied page, unlike API 404.
+            if [ "$route" = /moderation ]; then expected=200; else expected=404; fi
+            for headers in none forged origin; do
+              case "$headers" in
+                none) curl --connect-timeout 2 --max-time 5 --silent -o "$RUNNER_TEMP/admin-denied-workspace.html" -w '%{http_code}' "http://127.0.0.1:3103$route" > "$RUNNER_TEMP/admin-denied-status.txt" ;;
+                forged) curl --connect-timeout 2 --max-time 5 --silent -H 'Cookie: __Host-services-admin-session=forged' -o "$RUNNER_TEMP/admin-denied-workspace.html" -w '%{http_code}' "http://127.0.0.1:3103$route" > "$RUNNER_TEMP/admin-denied-status.txt" ;;
+                origin) curl --connect-timeout 2 --max-time 5 --silent -H 'Origin: https://attacker.example' -o "$RUNNER_TEMP/admin-denied-workspace.html" -w '%{http_code}' "http://127.0.0.1:3103$route" > "$RUNNER_TEMP/admin-denied-status.txt" ;;
+              esac
+              test "$(cat "$RUNNER_TEMP/admin-denied-status.txt")" = "$expected"
+              if [ "$route" = /moderation ]; then
+                grep -q 'Бет табылмады' "$RUNNER_TEMP/admin-denied-workspace.html"
+                if grep -q 'Жүйеден шығу' "$RUNNER_TEMP/admin-denied-workspace.html"; then exit 1; fi
+              fi
+            done
           done
           # Private server-rendered documents reject origin-bearing requests.
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/moderation)" = 404
           # An Authorization header or URL parameter is not a browser admin session.
           for route in /moderation /api/moderation/cases; do
-            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer forged' "http://127.0.0.1:3103$route?token=forged")" = 404
+            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer forged' "http://127.0.0.1:3103$route?token=forged")" = $([ "$route" = /moderation ] && echo 200 || echo 404)
           done
           # Unknown Fetch Metadata values must never grant access to privileged routes.
           for site in cross-site same-site invalid; do
@@ -183,7 +194,7 @@ jobs:
           done
           # Duplicate cookie names must not be interpreted as one valid session.
           for route in /moderation /api/moderation/cases; do
-            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged; __Host-services-admin-session=forged' "http://127.0.0.1:3103$route")" = 404
+            test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged; __Host-services-admin-session=forged' "http://127.0.0.1:3103$route")" = $([ "$route" = /moderation ] && echo 200 || echo 404)
           done
       - name: Print admin server diagnostics on failure
         if: failure()
