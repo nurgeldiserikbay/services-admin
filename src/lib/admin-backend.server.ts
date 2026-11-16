@@ -31,11 +31,12 @@ const STATES=new Set(['triage','in_review','decision','appeal','closed']);
 export function validateModerationPayload(payload:unknown):{items:ModerationCase[]}|null{
   if(!payload||typeof payload!=='object'||Array.isArray(payload)||
      Object.getPrototypeOf(payload)!==Object.prototype||
-     Object.keys(payload).length!==1||!Object.hasOwn(payload,'items')||
-     !Array.isArray(payload.items)||payload.items.length>50)return null;
+     Object.keys(payload).length!==1||!Object.hasOwn(payload,'items'))return null;
+  const rawItems=(payload as Record<string,unknown>).items;
+  if(!Array.isArray(rawItems)||rawItems.length>50)return null;
   const items:ModerationCase[]=[];
   const seen=new Set<string>();
-  for(const item of payload.items){
+  for(const item of rawItems){
     if(!item||typeof item!=='object'||Array.isArray(item)||
        Object.getPrototypeOf(item)!==Object.prototype||
        Object.keys(item).length!==4||
