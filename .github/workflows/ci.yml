@@ -136,6 +136,10 @@ jobs:
           # Private server-rendered documents reject origin-bearing requests.
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/moderation)" = 200
           echo 'Enabled post-baseline checks reached'
+          echo 'Forged query + bearer page status:'
+          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' -H 'Authorization: Bearer forged' 'http://127.0.0.1:3103/moderation?token=forged'
+          echo 'Forged query + bearer API status:'
+          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' -H 'Authorization: Bearer forged' 'http://127.0.0.1:3103/api/moderation/cases?token=forged'
           # An Authorization header or URL parameter is not a browser admin session.
           for route in /moderation /api/moderation/cases; do
             test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer forged' "http://127.0.0.1:3103$route?token=forged")" = $([ "$route" = /moderation ] && echo 200 || echo 404)
