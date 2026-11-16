@@ -161,6 +161,22 @@ jobs:
               test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X "$method" "http://127.0.0.1:3103$route")" = 405
             done
           done
+          # Backend private MFA controller is intentionally unregistered; admin BFF
+          # must not accidentally expose a browser credential exchange or issue cookies.
+          for route in /api/auth/login /api/auth/mfa/verify /api/admin/private/mfa/verify; do
+            curl --connect-timeout 2 --max-time 5 --silent -D "$RUNNER_TEMP/admin-unmounted-auth-headers.txt" -o "$RUNNER_TEMP/admin-unmounted-auth-body.txt" \
+              -X POST -H 'Content-Type: application/json' -H 'Origin: http://127.0.0.1:3103' \
+              --data '{"otp":"000000","session_token":"forged"}' "http://127.0.0.1:3103$route"
+            grep -Eiq '^HTTP/[0-9.]+ 404' "$RUNNER_TEMP/admin-unmounted-auth-headers.txt"
+            if grep -Eiq '^set-cookie:' "$RUNNER_TEMP/admin-unmounted-auth-headers.txt"; then
+              echo "Unmounted admin auth endpoint issued cookie: $route"
+              exit 1
+            fi
+            if grep -Eiq 'session_token|bearer|totp|secret' "$RUNNER_TEMP/admin-unmounted-auth-body.txt"; then
+              echo "Unmounted admin auth endpoint leaked privileged details: $route"
+              exit 1
+            fi
+          done
           # Logout must never accept GET, including same-origin and forged session cookies.
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Cookie: __Host-services-admin-session=forged' http://127.0.0.1:3103/api/auth/logout)" = 405
           # Repeated and oversized cookies must fail closed without a Set-Cookie side effect.
