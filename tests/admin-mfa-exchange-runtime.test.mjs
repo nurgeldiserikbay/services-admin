@@ -75,7 +75,7 @@ test('private MFA transport remains disabled by default and does not fetch',asyn
   assert.equal(await exchangeTrustedAdminMfa(token,'123456',now),null);
   assert.equal(calls,0);
   process.env.SERVICES_ADMIN_ENABLE_PRIVATE_MFA_EXCHANGE='enabled';
-  assert.equal(await exchangeTrustedAdminMfa(token,'bad',now),null);
+  assert.equal(await exchangeTrustedAdminMfa(token,'12345678901234567',now),null);
   assert.equal(calls,0);
  }finally{
   globalThis.fetch=prev;
@@ -206,6 +206,36 @@ test('private MFA wire contract rejects duplicate JSON keys and ambiguous respon
   assert.equal(await send(JSON.stringify(valid()),{'content-type':'application/json; charset=iso-8859-1'}),null);
   assert.equal(await send(JSON.stringify(valid()),{'content-range':'bytes 0-5/20'}),null);
   assert.equal(await send(JSON.stringify(valid()),{'content-length':'999'}),null);
+ }finally{
+  globalThis.fetch=previousFetch;
+  for(const [name,value] of Object.entries(saved)){
+   if(value===undefined)delete process.env[name];else process.env[name]=value;
+  }
+ }
+});
+
+test('bounded malformed MFA codes reach backend to preserve durable lockout counting',async()=>{
+ const names=['SERVICES_BACKEND_INTERNAL_ORIGIN','ADMIN_MFA_BFF_KEY','SERVICES_ADMIN_ENABLE_PRIVATE_MFA_EXCHANGE'];
+ const saved=Object.fromEntries(names.map(name=>[name,process.env[name]]));
+ const previousFetch=globalThis.fetch;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  process.env.ADMIN_MFA_BFF_KEY=randomBytes(32).toString('base64');
+  process.env.SERVICES_ADMIN_ENABLE_PRIVATE_MFA_EXCHANGE='enabled';
+  const received=[];
+  globalThis.fetch=async(_url,options)=>{
+   received.push(JSON.parse(options.body).totp_code);
+   return new Response(JSON.stringify({code:'INVALID_MFA'}),{
+    status:401,headers:{'cache-control':'private, no-store','content-type':'application/json'},
+   });
+  };
+  for(const code of ['', 'bad', '12345', '1234567', '1234567890123456']){
+   assert.equal(await exchangeTrustedAdminMfa(token,code,now),null);
+  }
+  assert.deepEqual(received,['', 'bad', '12345', '1234567', '1234567890123456']);
+  assert.equal(await exchangeTrustedAdminMfa(token,'12345678901234567',now),null);
+  assert.equal(await exchangeTrustedAdminMfa(token,123456,now),null);
+  assert.equal(received.length,5);
  }finally{
   globalThis.fetch=previousFetch;
   for(const [name,value] of Object.entries(saved)){
