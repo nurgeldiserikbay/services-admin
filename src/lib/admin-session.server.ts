@@ -48,7 +48,10 @@ export function openAdminSession(cookie:unknown,now=Date.now()):string|null{
   decipher.setAAD(AAD);decipher.setAuthTag(tag);
   const value=JSON.parse(Buffer.concat([decipher.update(ciphertext),decipher.final()]).toString('utf8'));
   if(!value||typeof value!=='object'||Array.isArray(value)||
-     Object.keys(value).length!==2||!TOKEN.test(value.token)||
+     Object.getPrototypeOf(value)!==Object.prototype||
+     Object.keys(value).length!==2||
+     !Object.hasOwn(value,'token')||!Object.hasOwn(value,'expiresAt')||
+     !TOKEN.test(value.token)||
      !Number.isSafeInteger(value.expiresAt)||value.expiresAt<=now||
      value.expiresAt>now+MAX_TTL)return null;
   return value.token;
