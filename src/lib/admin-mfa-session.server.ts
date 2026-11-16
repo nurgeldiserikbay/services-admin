@@ -20,7 +20,8 @@ export async function prepareAdminMfaCookie(
  try{
   // Round down: never advertise a cookie TTL longer than the backend grant.
   const maxAgeSeconds=Math.floor((grant.expiresAt-now)/1000);
-  if(maxAgeSeconds<1||maxAgeSeconds>900)return null;
+  if(grant.expiresAt<=now||grant.expiresAt>now+900_000||
+     maxAgeSeconds<1||maxAgeSeconds>900)return null;
   const sealedValue=sealAdminSession(grant.token,grant.expiresAt,now);
   return {sealedValue,maxAgeSeconds};
  }catch{return null;}
