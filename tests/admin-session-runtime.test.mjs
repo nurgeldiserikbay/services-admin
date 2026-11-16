@@ -78,3 +78,25 @@ test('duplicate and malformed admin session cookie headers are denied',()=>{
  assert.equal(readUniqueAdminCookie(null,'one'),null);
  assert.equal(readUniqueAdminCookie('x'.repeat(8193),'one'),null);
 });
+
+test('admin session rejects malformed authenticated payload shape and expired cookies',()=>{
+ const previousKey=process.env.SERVICES_ADMIN_COOKIE_KEY;
+ try{
+  process.env.SERVICES_ADMIN_COOKIE_KEY=randomBytes(32).toString('base64');
+  const cookie=sealAdminSession(token,now+15*60*1000,now);
+  assert.equal(openAdminSession(cookie,now+15*60*1000-1),token);
+  assert.equal(openAdminSession(cookie,now+15*60*1000),null);
+  assert.equal(openAdminSession(cookie,now-1),null,'future-expiry beyond maximum TTL denied');
+  for(const invalid of [
+   cookie+'.extra',
+   'v2'+cookie.slice(2),
+   cookie.replace(/\./g,'-'),
+   cookie.toUpperCase(),
+   cookie+'%',
+   ' '.repeat(10)+cookie,
+  ])assert.equal(openAdminSession(invalid,now),null);
+ }finally{
+  if(previousKey===undefined)delete process.env.SERVICES_ADMIN_COOKIE_KEY;
+  else process.env.SERVICES_ADMIN_COOKIE_KEY=previousKey;
+ }
+});
