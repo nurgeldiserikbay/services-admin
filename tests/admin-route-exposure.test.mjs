@@ -52,6 +52,6 @@ test('private moderation API denies cross-origin requests even without fetch met
  const source=readFileSync(join(root,'api/moderation/cases/route.ts'),'utf8');
  assert.match(source,/request\.headers\.get\('origin'\)/);
  assert.match(source,/origin!==null&&origin!==request\.nextUrl\.origin/);
- assert.match(source,/site==='cross-site'\|\|site==='same-site'/);
+ assert.match(source,/site!==null&&site!=='same-origin'&&site!=='none'/);
  assert.match(source,/'Vary':'Cookie, Origin, Sec-Fetch-Site'/);
 });
