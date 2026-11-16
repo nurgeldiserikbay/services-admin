@@ -46,6 +46,13 @@ jobs:
           done
           curl --connect-timeout 2 --max-time 5 --fail --silent -o "$RUNNER_TEMP/admin-health.json" http://127.0.0.1:3102/api/health
           grep -q '"status":"ok"' "$RUNNER_TEMP/admin-health.json"
+          echo 'Health HEAD headers:'
+          curl --connect-timeout 2 --max-time 5 --silent -I http://127.0.0.1:3102/api/health
+          echo 'Health GET headers:'
+          curl --connect-timeout 2 --max-time 5 --silent -D - -o /dev/null http://127.0.0.1:3102/api/health
+          echo 'Unknown route status:'
+          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3102/ci-unknown-admin-route
+
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -I http://127.0.0.1:3102/api/health)" = 200
           curl --connect-timeout 2 --max-time 5 --fail --silent -I http://127.0.0.1:3102/api/health > "$RUNNER_TEMP/admin-health-head-headers.txt"
           grep -Eiq '^cache-control:.*no-store' "$RUNNER_TEMP/admin-health-head-headers.txt"
