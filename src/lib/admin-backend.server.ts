@@ -107,6 +107,9 @@ export async function fetchAdminModerationCases(
       }
       reader.releaseLock();
     }
+    // A declared length must match the complete stream, not merely stay below the cap.
+    // Reject truncated and overlong privileged snapshots alike.
+    if(length!==null&&Number(length)!==total)return null;
     const bytes=new Uint8Array(total);
     let offset=0;
     for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
@@ -168,6 +171,8 @@ export async function revokeAdminBackendSession(bearer:unknown):Promise<boolean>
    }
    reader.releaseLock();
   }
+  // Do not accept a revocation acknowledgement with a misleading wire length.
+  if(length!==null&&Number(length)!==total)return false;
   const bytes=new Uint8Array(total);
   let offset=0;
   for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
