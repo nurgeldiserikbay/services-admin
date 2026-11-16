@@ -15,10 +15,14 @@ test('AST security lint rejects executable HTML and dynamic code, but accepts sa
   assert.equal(run().status,0,'safe JSX should pass');
   for(const [name,source] of [
    ['eval','eval("1")'],
+   ['indirect eval','globalThis.eval("1")'],
+   ['computed indirect eval','globalThis["eval"]("1")'],
    ['Function constructor','new Function("return 1")'],
    ['dynamic Function call','Function("return 1")'],
    ['document.write','document.write("unsafe")'],
    ['innerHTML','element.innerHTML = "unsafe"'],
+   ['computed innerHTML','element["innerHTML"] = "unsafe"'],
+   ['computed outerHTML','element["outerHTML"] = "unsafe"'],
    ['outerHTML','element.outerHTML = "unsafe"'],
    ['React HTML injection','export const Unsafe = () => <div dangerouslySetInnerHTML={{__html: "unsafe"}} />;'],
   ]){
