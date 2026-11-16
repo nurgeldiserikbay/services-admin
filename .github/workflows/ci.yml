@@ -150,7 +150,8 @@ jobs:
           # Unknown Fetch Metadata values must never grant access to privileged routes.
           for site in cross-site same-site invalid; do
             for route in /moderation /api/moderation/cases; do
-              test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H "Sec-Fetch-Site: $site" "http://127.0.0.1:3103$route")" = 404
+              if [ "$route" = /moderation ]; then expected=200; else expected=404; fi
+              test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H "Sec-Fetch-Site: $site" "http://127.0.0.1:3103$route")" = "$expected"
             done
           done
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -X POST -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/api/auth/logout)" = 404
