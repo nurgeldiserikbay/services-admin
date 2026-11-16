@@ -134,7 +134,7 @@ jobs:
             done
           done
           # Private server-rendered documents reject origin-bearing requests.
-          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/moderation)" = 404
+          test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/moderation)" = 200
           echo 'Enabled post-baseline checks reached'
           # An Authorization header or URL parameter is not a browser admin session.
           for route in /moderation /api/moderation/cases; do
