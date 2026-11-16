@@ -8,7 +8,7 @@ test('admin CI runs all quality gates with least privilege and bounded runtime',
  assert.match(workflow,/uses: actions\/checkout@v4\n\s+with:\n\s+persist-credentials: false/);
   assert.match(workflow,/^    timeout-minutes: 30$/m);
  assert.match(workflow,/^concurrency:\n  group: \$\{\{ github\.workflow \}\}-\$\{\{ github\.ref \}\}\n  cancel-in-progress: true$/m);
-  const gates=['pnpm typecheck','pnpm test','pnpm build'];
+  const gates=['pnpm typecheck','pnpm lint','pnpm test','pnpm build'];
   let previous=-1;
   for(const gate of gates){
     const occurrences=workflow.split('run: '+gate).length-1;
@@ -18,6 +18,8 @@ test('admin CI runs all quality gates with least privilege and bounded runtime',
     previous=index;
   }
   assert.match(workflow,/node-version: '22'/);
+  const packageJson=JSON.parse(readFileSync('package.json','utf8'));
+  assert.equal(packageJson.scripts.lint,'node scripts/security-lint.mjs');
   assert.match(workflow,/pnpm install --frozen-lockfile/);
   assert.match(workflow,/pnpm audit --prod --audit-level high --json > pnpm-audit\.json/);
   assert.match(workflow,/name: Archive production dependency audit evidence\n\s+if: \$\{\{ always\(\) \}\}\n\s+uses: actions\/upload-artifact@v4/);
