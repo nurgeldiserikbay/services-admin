@@ -84,3 +84,18 @@ test('UI authorization hints refuse inherited or missing verified claim fields',
   assert.equal(canDisplayPlatformAction(malformed,'moderation.read',now),expected);
  }
 });
+
+test('RBAC hints do not execute attacker-controlled accessor claims',()=>{
+ const good=claims('owner');
+ for(const key of ['role','sessionExpiresAt','mfaVerifiedAt']){
+  let called=0;
+  const forged={...good};
+  Object.defineProperty(forged,key,{enumerable:true,configurable:true,get(){
+   called++;
+   throw Error('untrusted accessor must not execute');
+  }});
+  assert.equal(canDisplayPlatformAction(forged,'moderation.read',now),false);
+  assert.equal(canDisplayCaseAction(forged,'in_review','decide','valid reason',now),false);
+  assert.equal(called,0,'accessor must not run: '+key);
+ }
+});
