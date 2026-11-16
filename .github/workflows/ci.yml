@@ -44,7 +44,8 @@ jobs:
             if curl --connect-timeout 2 --max-time 3 --fail --silent http://127.0.0.1:3102/api/health >/dev/null; then break; fi
             sleep 2
           done
-          curl --connect-timeout 2 --max-time 5 --fail --silent http://127.0.0.1:3102/api/health | grep -q .
+          curl --connect-timeout 2 --max-time 5 --fail --silent -o "$RUNNER_TEMP/admin-health.json" http://127.0.0.1:3102/api/health
+          grep -q '"status":"ok"' "$RUNNER_TEMP/admin-health.json"
           test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' -I http://127.0.0.1:3102/api/health)" = 200
           curl --connect-timeout 2 --max-time 5 --fail --silent -I http://127.0.0.1:3102/api/health > "$RUNNER_TEMP/admin-health-head-headers.txt"
           grep -Eiq '^cache-control:.*no-store' "$RUNNER_TEMP/admin-health-head-headers.txt"
@@ -88,7 +89,8 @@ jobs:
             if curl --connect-timeout 2 --max-time 3 --fail --silent http://127.0.0.1:3103/api/health >/dev/null; then break; fi
             sleep 2
           done
-          curl --connect-timeout 2 --max-time 5 --fail --silent http://127.0.0.1:3103/api/health | grep -q .
+          curl --connect-timeout 2 --max-time 5 --fail --silent -o "$RUNNER_TEMP/admin-enabled-health.json" http://127.0.0.1:3103/api/health
+          grep -q '"status":"ok"' "$RUNNER_TEMP/admin-enabled-health.json"
           # Enabled flag alone must not grant access; backend secrets and valid MFA session are absent.
           for route in /moderation /api/moderation/cases; do
             test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' "http://127.0.0.1:3103$route")" = 404
