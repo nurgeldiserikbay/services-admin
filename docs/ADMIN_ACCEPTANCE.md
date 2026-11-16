@@ -49,3 +49,33 @@ The server-only BFF logout transport now requires HTTP 200, `Cache-Control: no-s
 ### Strict logout JSON shape follow-up
 
 The logout acknowledgement parser now rejects duplicate JSON keys and unexpected fields at the wire level, instead of relying on `JSON.parse` (which retains the last duplicate key). See [`2d7667a`](https://github.com/nurgeldiserikbay/services-admin/commit/2d7667a08188c3a352869773c433232205351bf5) and [`dd717db`](https://github.com/nurgeldiserikbay/services-admin/commit/dd717dbc85103afeff32a27557d05e9946078a1e). CI and live HTTP acceptance remain pending.
+
+
+## Admin login integration contract (pending implementation)
+
+The current BFF has **no authenticated login endpoint**. Do not claim the moderation
+workspace is production-ready or add a browser-facing endpoint that accepts an
+administrator staff ID, a caller-selected primary-auth timestamp, a raw admin
+bearer, or a TOTP encryption key.
+
+The implementation must meet these gates before the flag can be enabled:
+
+1. Complete primary account sign-in in a trusted server-side channel and obtain
+   a short-lived, database-backed account session. Verify the session and
+   staff grants again inside the same PostgreSQL transaction that consumes TOTP.
+2. Define an authenticated **private** BFF-to-backend MFA exchange with a
+   dedicated service credential, explicit allowlisted ingress, strict request
+   schema, rate limits, audit logging, and no-store responses. Keep the account
+   bearer and resulting admin bearer out of browser JSON, HTML and storage.
+3. Resolve TOTP encryption keys on the backend from deployment-managed secrets,
+   using the factor's key version; fail closed if a version is unknown.
+   Keep separate account-session and admin-session HMAC keys.
+4. Only after the backend COMMIT succeeds, seal the returned admin bearer into
+   the existing HttpOnly, Secure, SameSite=Strict, __Host-prefixed BFF cookie.
+   Never set a cookie after a failed or uncertain COMMIT.
+5. Verify CSRF/origin protections, MFA replay/lockout, expired and revoked
+   primary sessions, staff grant removal, logout revocation, cookie expiry,
+   cross-repository integration and real browser E2E in CI before enabling.
+
+**Status:** contract documented; private MFA HTTP exchange and BFF login route
+are not yet implemented or accepted.
