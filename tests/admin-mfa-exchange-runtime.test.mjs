@@ -132,3 +132,43 @@ test('private MFA transport checks backend response and never returns raw respon
   }
  }
 });
+
+test('private MFA transport refuses reused service credentials before network access',async()=>{
+ const names=[
+  'SERVICES_BACKEND_INTERNAL_ORIGIN','ADMIN_MFA_BFF_KEY',
+  'SERVICES_ADMIN_ENABLE_PRIVATE_MFA_EXCHANGE',
+  'SERVICES_ADMIN_COOKIE_KEY','PLATFORM_ADMIN_SESSION_HMAC_KEY',
+  'ACCOUNT_SESSION_HMAC_KEY','ACCOUNT_LOGIN_BFF_KEY',
+ ];
+ const saved=Object.fromEntries(names.map(name=>[name,process.env[name]]));
+ const previousFetch=globalThis.fetch;
+ try{
+  const key=randomBytes(32).toString('base64');
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  process.env.ADMIN_MFA_BFF_KEY=key;
+  process.env.SERVICES_ADMIN_ENABLE_PRIVATE_MFA_EXCHANGE='enabled';
+  for(const peer of names.slice(3))delete process.env[peer];
+  let calls=0;
+  globalThis.fetch=async()=>{
+   calls++;
+   return new Response(JSON.stringify(valid()),{
+    headers:{'cache-control':'private, no-store','content-type':'application/json'},
+   });
+  };
+  for(const peer of names.slice(3)){
+   process.env[peer]=key;
+   assert.equal(await exchangeTrustedAdminMfa(token,'123456',now),null,peer);
+   delete process.env[peer];
+  }
+  assert.equal(calls,0);
+  assert.deepEqual(await exchangeTrustedAdminMfa(token,'123456',now),{
+   token,expiresAt:now+60000,
+  });
+  assert.equal(calls,1);
+ }finally{
+  globalThis.fetch=previousFetch;
+  for(const [name,value] of Object.entries(saved)){
+   if(value===undefined)delete process.env[name];else process.env[name]=value;
+  }
+ }
+});
