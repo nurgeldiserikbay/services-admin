@@ -172,3 +172,44 @@ test('private MFA transport refuses reused service credentials before network ac
   }
  }
 });
+
+test('private MFA wire contract rejects duplicate JSON keys and ambiguous responses',async()=>{
+ const names=['SERVICES_BACKEND_INTERNAL_ORIGIN','ADMIN_MFA_BFF_KEY','SERVICES_ADMIN_ENABLE_PRIVATE_MFA_EXCHANGE'];
+ const saved=Object.fromEntries(names.map(name=>[name,process.env[name]]));
+ const previousFetch=globalThis.fetch;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  process.env.ADMIN_MFA_BFF_KEY=randomBytes(32).toString('base64');
+  process.env.SERVICES_ADMIN_ENABLE_PRIVATE_MFA_EXCHANGE='enabled';
+  const send=async(body,headers={})=>{
+   globalThis.fetch=async()=>new Response(body,{
+    status:200,headers:{
+     'cache-control':'private, no-store',
+     'content-type':'application/json',
+     ...headers,
+    },
+   });
+   return exchangeTrustedAdminMfa(token,'123456',now);
+  };
+  for(const body of [
+   '{"session_token":"'+token+'","session_token":"'+token+'","expires_at":'+(now+60000)+'}',
+   '{"session_token":"'+token+'","expires_at":'+(now+60000)+',"expires_at":'+(now+60000)+'}',
+   '{"session_token":"'+token+'","expires_at":'+(now+60000)+',"extra":true}',
+   '{"session_token":"'+token+'","expires_at":1e15}',
+   '{"session_token":"'+token+'","expires_at":'+(now+60000)+',"nested":{}}',
+  ]){
+   assert.equal(await send(body),null,body);
+  }
+  assert.deepEqual(await send('{"expires_at":'+(now+60000)+',"session_token":"'+token+'"}'),{
+   token,expiresAt:now+60000,
+  });
+  assert.equal(await send(JSON.stringify(valid()),{'content-type':'application/json; charset=iso-8859-1'}),null);
+  assert.equal(await send(JSON.stringify(valid()),{'content-range':'bytes 0-5/20'}),null);
+  assert.equal(await send(JSON.stringify(valid()),{'content-length':'999'}),null);
+ }finally{
+  globalThis.fetch=previousFetch;
+  for(const [name,value] of Object.entries(saved)){
+   if(value===undefined)delete process.env[name];else process.env[name]=value;
+  }
+ }
+});
