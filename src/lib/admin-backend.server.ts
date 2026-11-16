@@ -79,7 +79,7 @@ export async function fetchAdminModerationCases(
       return null;
     };
     // A partial (206) or otherwise non-200 success is not a complete queue snapshot.
-    if(response.status!==200)return deny();
+    if(response.status!==200||response.headers.has('content-range'))return deny();
     // Privileged data must never be accepted from an upstream cacheable response.
     const cacheControl=response.headers.get('cache-control')??'';
     if(!/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl))return deny();
@@ -144,7 +144,7 @@ export async function revokeAdminBackendSession(bearer:unknown):Promise<boolean>
   const length=response.headers.get('content-length');
   // A status-only acknowledgement does not prove the backend revoked the
   // requested session. Require its exact, non-cacheable success contract.
-  if(response.status!==200||
+  if(response.status!==200||response.headers.has('content-range')||
      !/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl)||
      !/^application\/json(?:\s*;|\s*$)/i.test(contentType)||
      (length!==null&&(!/^\d+$/.test(length)||Number(length)>128))){
