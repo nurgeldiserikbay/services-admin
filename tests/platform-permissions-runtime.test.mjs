@@ -66,3 +66,21 @@ test('real case decision hint is restricted to in-review and nonempty bounded re
  }
  assert.equal(canDisplayCaseAction(claims('owner'),'in_review','decide','x'.repeat(2000),now),true);
 });
+
+test('UI authorization hints refuse inherited or missing verified claim fields',()=>{
+ const valid=claims('owner');
+ for(const malformed of [
+  Object.create(valid),
+  Object.assign(Object.create(valid),{role:'owner'}),
+  Object.assign(Object.create(null),{...valid,role:'owner'}),
+  {...valid,role:undefined},
+  {role:'owner',sessionExpiresAt:valid.sessionExpiresAt},
+  {role:'owner',mfaVerifiedAt:valid.mfaVerifiedAt},
+  {sessionExpiresAt:valid.sessionExpiresAt,mfaVerifiedAt:valid.mfaVerifiedAt},
+  [valid.role,valid.sessionExpiresAt,valid.mfaVerifiedAt],
+ ]){
+  // Null-prototype records with all own fields remain structurally valid.
+  const expected=Object.getPrototypeOf(malformed)===null;
+  assert.equal(canDisplayPlatformAction(malformed,'moderation.read',now),expected);
+ }
+});
