@@ -110,6 +110,12 @@ jobs:
           done
           curl --connect-timeout 2 --max-time 5 --fail --silent -o "$RUNNER_TEMP/admin-enabled-health.json" http://127.0.0.1:3103/api/health
           grep -q '"status":"ok"' "$RUNNER_TEMP/admin-enabled-health.json"
+          echo 'Enabled moderation page status:'
+          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3103/moderation
+          echo 'Enabled moderation API status:'
+          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3103/api/moderation/cases
+          echo 'Enabled logout status:'
+          curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}\n' -X POST -H 'Origin: http://127.0.0.1:3103' http://127.0.0.1:3103/api/auth/logout
           # Enabled flag alone must not grant access; backend secrets and valid MFA session are absent.
           for route in /moderation /api/moderation/cases; do
             test "$(curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w '%{http_code}' "http://127.0.0.1:3103$route")" = 404
