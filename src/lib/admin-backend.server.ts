@@ -82,7 +82,7 @@ export async function fetchAdminModerationCases(
     if(response.status!==200||response.headers.has('content-range'))return deny();
     // Privileged data must never be accepted from an upstream cacheable response.
     const cacheControl=response.headers.get('cache-control')??'';
-    if(!/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl))return deny();
+    if((!/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl)||\n      /(?:^|,)\s*(?:public|s-maxage\s*=)/i.test(cacheControl))||\n       /(?:^|,)\s*(?:public|s-maxage\s*=)/i.test(cacheControl))return deny();
     const contentType=response.headers.get('content-type')??'';
     if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))return deny();
     const length=response.headers.get('content-length');
