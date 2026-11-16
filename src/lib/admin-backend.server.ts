@@ -82,7 +82,8 @@ export async function fetchAdminModerationCases(
     if(response.status!==200||response.headers.has('content-range'))return deny();
     // Privileged data must never be accepted from an upstream cacheable response.
     const cacheControl=response.headers.get('cache-control')??'';
-    if((!/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl)||\n      /(?:^|,)\s*(?:public|s-maxage\s*=)/i.test(cacheControl))||\n       /(?:^|,)\s*(?:public|s-maxage\s*=)/i.test(cacheControl))return deny();
+    if(!/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl)||
+       /(?:^|,)\s*(?:public|s-maxage\s*=)/i.test(cacheControl))return deny();
     const contentType=response.headers.get('content-type')??'';
     if(!/^application\/json(?:\s*;|\s*$)/i.test(contentType))return deny();
     const length=response.headers.get('content-length');
@@ -145,7 +146,8 @@ export async function revokeAdminBackendSession(bearer:unknown):Promise<boolean>
   // A status-only acknowledgement does not prove the backend revoked the
   // requested session. Require its exact, non-cacheable success contract.
   if(response.status!==200||response.headers.has('content-range')||
-     !/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl)||
+     (!/(?:^|,)\s*no-store\s*(?:,|$)/i.test(cacheControl)||
+      /(?:^|,)\s*(?:public|s-maxage\s*=)/i.test(cacheControl))||
      !/^application\/json(?:\s*;|\s*$)/i.test(contentType)||
      (length!==null&&(!/^\d+$/.test(length)||Number(length)>128))){
    if(response.body){
