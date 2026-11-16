@@ -31,7 +31,7 @@ export function canDisplayPlatformAction(
 ):boolean{
   if(!verifiedClaims || typeof verifiedClaims!=='object' ||
      Array.isArray(verifiedClaims) ||
-     !['role','sessionExpiresAt','mfaVerifiedAt'].every(key=>Object.hasOwn(verifiedClaims,key)) ||
+     !['role','sessionExpiresAt','mfaVerifiedAt'].every(key=>{\n       const descriptor=Object.getOwnPropertyDescriptor(verifiedClaims,key);\n       return descriptor&&Object.hasOwn(descriptor,'value');\n     }) ||
      !Number.isSafeInteger(now) || now<0 ||
      !Number.isSafeInteger(verifiedClaims.sessionExpiresAt) ||
      verifiedClaims.sessionExpiresAt<0 ||
