@@ -25,7 +25,7 @@ test('AST security lint rejects executable HTML and dynamic code, but accepts sa
    writeFileSync(file,source+'\n');
    const result=run();
    assert.notEqual(result.status,0,`${name} must fail lint`);
-   assert.match(result.stderr,/sample\.tsx:\\d+:\\d+:/,`${name} should report a source location`);
+   assert.match(result.stderr,/sample\.tsx:\d+:\d+:/,`${name} should report a source location`);
   }
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
