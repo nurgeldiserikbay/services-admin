@@ -138,7 +138,7 @@ test('live transport rejects oversized streams, invalid UTF-8 and UTF-8 BOM',asy
   for(const bytes of [bom,invalid,new Uint8Array(32769)]){
    let cancelled=false;
    const stream=new ReadableStream({
-    start(controller){controller.enqueue(bytes);},
+    start(controller){controller.enqueue(bytes);controller.close();},
     cancel(){cancelled=true;},
    });
    globalThis.fetch=async()=>new Response(stream,{
