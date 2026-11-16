@@ -146,6 +146,7 @@ jobs:
           done
           echo 'Forged fetch metadata page status:'
           for site in cross-site same-site invalid; do curl --connect-timeout 2 --max-time 5 --silent -o /dev/null -w "${site}:%{http_code}\n" -H "Sec-Fetch-Site: $site" http://127.0.0.1:3103/moderation; done
+          echo 'Enabled metadata tests reached'
           # Unknown Fetch Metadata values must never grant access to privileged routes.
           for site in cross-site same-site invalid; do
             for route in /moderation /api/moderation/cases; do
