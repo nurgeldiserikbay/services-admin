@@ -192,3 +192,42 @@ test('backend logout confirms only a non-cacheable HTTP 200 response',async()=>{
   else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
  }
 });
+
+test('live moderation and logout reject truncated or overlong declared content lengths',async()=>{
+ const previousOrigin=process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+ const previousFetch=globalThis.fetch;
+ try{
+  process.env.SERVICES_BACKEND_INTERNAL_ORIGIN='https://api.example.test';
+  const moderation=JSON.stringify({items:[row()]});
+  const acknowledgement='{"status":"revoked"}';
+  for(const [body,call] of [
+   [moderation,()=>fetchAdminModerationCases(token)],
+   [acknowledgement,()=>revokeAdminBackendSession(token)],
+  ]){
+   for(const delta of [-1,1]){
+    globalThis.fetch=async()=>new Response(body,{
+     status:200,headers:{
+      'content-type':'application/json',
+      'cache-control':'private, no-store',
+      'content-length':String(Buffer.byteLength(body)+delta),
+     },
+    });
+    const result=await call();
+    assert.ok(result===null||result===false,'mismatched declared length must fail closed');
+   }
+   globalThis.fetch=async()=>new Response(body,{
+    status:200,headers:{
+     'content-type':'application/json',
+     'cache-control':'private, no-store',
+     'content-length':String(Buffer.byteLength(body)),
+    },
+   });
+   const valid=await call();
+   assert.ok(valid!==null&&valid!==false,'matching declared length must succeed');
+  }
+ }finally{
+  globalThis.fetch=previousFetch;
+  if(previousOrigin===undefined)delete process.env.SERVICES_BACKEND_INTERNAL_ORIGIN;
+  else process.env.SERVICES_BACKEND_INTERNAL_ORIGIN=previousOrigin;
+ }
+});
