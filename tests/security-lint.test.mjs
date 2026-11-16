@@ -15,6 +15,10 @@ test('AST security lint rejects executable HTML and dynamic code, but accepts sa
   assert.equal(run().status,0,'safe JSX should pass');
   for(const [name,source] of [
    ['eval','eval("1")'],
+   ['string setTimeout','setTimeout("alert(1)", 100)'],
+   ['string setInterval','setInterval("alert(1)", 100)'],
+   ['insertAdjacentHTML','element.insertAdjacentHTML("beforeend", "unsafe")'],
+   ['computed insertAdjacentHTML','element["insertAdjacentHTML"]("beforeend", "unsafe")'],
    ['indirect eval','globalThis.eval("1")'],
    ['computed indirect eval','globalThis["eval"]("1")'],
    ['Function constructor','new Function("return 1")'],
