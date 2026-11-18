@@ -20,6 +20,7 @@ test('no privileged admin HTTP route is accidentally mounted',()=>{
   'api/auth/logout/route.ts',
   'api/health/route.ts',
   'api/moderation/cases/route.ts',
+  'api/moderation/cases/[id]/decision/route.ts',
   'moderation/page.tsx',
   'page.tsx',
  ],
@@ -30,6 +31,7 @@ test('privileged routes stay explicitly disabled without an approved BFF rollout
  for(const route of [
   'api/auth/logout/route.ts',
   'api/moderation/cases/route.ts',
+  'api/moderation/cases/[id]/decision/route.ts',
   'moderation/page.tsx',
  ]){
   const source=readFileSync(join(root,route),'utf8');
