@@ -19,8 +19,8 @@ test('no privileged admin HTTP route is accidentally mounted',()=>{
  assert.deepEqual(routes,[
   'api/auth/logout/route.ts',
   'api/health/route.ts',
-  'api/moderation/cases/route.ts',
   'api/moderation/cases/[id]/decision/route.ts',
+  'api/moderation/cases/route.ts',
   'moderation/page.tsx',
   'page.tsx',
  ],
