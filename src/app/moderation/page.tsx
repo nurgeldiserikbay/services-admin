@@ -2,6 +2,7 @@ import {cookies,headers} from 'next/headers';
 import {notFound} from 'next/navigation';
 import {ModerationQueue} from '@/components/ModerationQueue';
 import {AdminLogoutButton} from '@/components/AdminLogoutButton';
+import {moderationCsrfToken} from '@/lib/admin-moderation-csrf.server';
 import {ADMIN_SESSION_COOKIE,openAdminSession,readUniqueAdminCookie} from '@/lib/admin-session.server';
 import {fetchAdminModerationCases} from '@/lib/admin-backend.server';
 
@@ -23,12 +24,13 @@ export default async function ModerationPage(){
  if(requestHeaders.has('origin')||
     (site!==null&&site!=='same-origin'&&site!=='none'))notFound();
  const store=await cookies();
- const bearer=openAdminSession(readUniqueAdminCookie(requestHeaders.get('cookie'),store.get(ADMIN_SESSION_COOKIE)?.value));
+ const sealed=readUniqueAdminCookie(requestHeaders.get('cookie'),store.get(ADMIN_SESSION_COOKIE)?.value);
+ const bearer=openAdminSession(sealed);
  if(!bearer)notFound();
  const result=await fetchAdminModerationCases(bearer);
  if(!result)notFound();
  return <main style={{minHeight:'100vh',padding:'clamp(16px,4vw,48px)'}}>
    <div style={{display:'flex',justifyContent:'flex-end',marginBottom:16}}><AdminLogoutButton/></div>
-   <ModerationQueue items={result.items}/>
+   <ModerationQueue items={result.items} decisionCsrf={process.env.SERVICES_ADMIN_ENABLE_MODERATION_DECISIONS==='enabled'?moderationCsrfToken(sealed):null}/>
  </main>;
 }

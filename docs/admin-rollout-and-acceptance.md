@@ -64,3 +64,9 @@ Do not commit actual secret values. Verify HTTPS termination, secure cookie forw
 - **Open:** real browser MFA login, authenticated UI E2E, role-by-role staging acceptance, comprehensive ESLint/React/Next semantic lint, deployment/security sign-off.
 
 Canonical cross-repository acceptance register: [MASTER_CHECKLIST.md](https://github.com/nurgeldiserikbay/services-back/blob/main/docs/MASTER_CHECKLIST.md).
+
+## Prepared professional moderation decision BFF (2026-11-18)
+- `POST /api/moderation/cases/{id}/decision` is additionally default-off under `SERVICES_ADMIN_ENABLE_MODERATION_DECISIONS=enabled` alongside `SERVICES_ADMIN_ENABLE_MODERATION_BFF=enabled`. The backend independently requires `SERVICES_ENABLE_PLATFORM_MODERATION_DECIDE_HTTP=enabled`.
+- Server derives HMAC CSRF token from the sealed, HttpOnly, SameSite=Strict session cookie, validates exact Origin/Fetch Metadata and body size, and rechecks that the case is a permitted professional case in decision state. The backend remains authoritative for current MFA, active scoped grant and version.
+- UI requires an independently verified profile UUID/version and an explicit confirmation. The redacted queue has no profile identifiers or authorizations to infer one.
+- **NOT APPROVED FOR PRODUCTION:** real browser MFA login, secure deployment review, case-to-profile verification UX, appeals/review lifecycle and legal sign-off are outstanding. Never turn on flags merely because CI passes.

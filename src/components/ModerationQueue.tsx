@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {ModerationCase} from '@/lib/admin-backend.server';
 import styles from './ModerationQueue.module.css';
+import {ModerationDecisionForm} from './ModerationDecisionForm';
 
 const labels={
   professional:'Маман',organization:'Компания',review:'Пікір',affiliation:'Байланыс',
@@ -17,7 +18,7 @@ const states={
  * server BFF after session/MFA/scope verification; never pass bearer to props.
  * This component deliberately performs no fetch and grants no permissions.
  */
-export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
+export function ModerationQueue({items,decisionCsrf=null}:{items:readonly ModerationCase[];decisionCsrf?:string|null}){
   const [query,setQuery]=useState('');
   const [kind,setKind]=useState('all');
   const [state,setState]=useState('all');
@@ -40,7 +41,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
         {items.length} жазба (осы бет)
       </span>
     </div>
-    <p className={styles.scopeNote}>Бұл тек ағымдағы рұқсат етілген бет. Жалпы кезек саны мен басқа жазбалар көрсетілмейді. Шешім қабылдау әрекеттері бұл көріністе қолжетімсіз.</p>
+    <p className={styles.scopeNote}>Бұл тек ағымдағы рұқсат етілген бет. Жалпы кезек саны мен басқа жазбалар көрсетілмейді. Шешім тек рұқсат етілген модерация ісінде және нақты профиль нұсқасы расталғанда қабылданады.</p>
     {items.length>0&&<div className={styles.filters}>
       <label className={styles.filterLabel}>Жазба ID іздеу <input className={styles.filterSelect} type="search" aria-label="Осы беттегі жазба ID бойынша іздеу" autoComplete="off" maxLength={36} value={query} onChange={event=>setQuery(event.target.value)} placeholder="UUID немесе оның бөлігі" /></label>
       <label className={styles.filterLabel}>Түрі <select className={styles.filterSelect} aria-label="Жазба түрі бойынша сүзгі" value={kind} onChange={event=>setKind(event.target.value)}>
@@ -67,7 +68,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
         <table className={styles.table}>
           <caption className={styles.caption}>Осы беттегі сүзгіден өткен {visible.length} модерация жазбасы</caption>
           <thead><tr><th scope="col">Түрі</th><th scope="col">Күйі</th>
-            <th scope="col">Тіркелген уақыты</th><th scope="col">ID</th></tr></thead>
+            <th scope="col">Тіркелген уақыты</th><th scope="col">ID</th>{decisionCsrf&&<th scope="col">Әрекет</th>}</tr></thead>
           <tbody>{visible.map(item=><tr key={item.id}>
             <td>{labels[item.subjectKind]}</td>
             <td><span className={styles.state}>{states[item.state]}</span></td>
@@ -75,6 +76,7 @@ export function ModerationQueue({items}:{items:readonly ModerationCase[]}){
               {new Date(item.createdAt).toLocaleString('kk-KZ',{timeZone:'UTC'})} UTC
             </time></td>
             <td><code className={styles.caseId} aria-label={`Жазба идентификаторы: ${item.id}`}>{item.id}</code></td>
+            {decisionCsrf&&<td>{item.subjectKind==='professional'&&item.state==='decision'?<ModerationDecisionForm caseId={item.id} csrf={decisionCsrf}/>:null}</td>}
           </tr>)}</tbody>
         </table>
       </div>}
