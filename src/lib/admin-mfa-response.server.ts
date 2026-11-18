@@ -17,7 +17,7 @@ const HEADERS={
 } as const;
 
 export async function buildTrustedAdminMfaResponse(
- accountSessionToken:unknown,totpCode:unknown,now=Date.now(),
+ accountSessionToken:unknown,totpCode:unknown,now?:number,
 ):Promise<NextResponse>{
  const prepared=await prepareAdminMfaCookie(accountSessionToken,totpCode,now);
  const directive=adminMfaCookieDirective(prepared);

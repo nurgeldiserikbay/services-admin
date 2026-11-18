@@ -77,3 +77,13 @@ test('MFA cookie directive enforces __Host-, HttpOnly, Secure and strict SameSit
  assert.equal(adminMfaCookieDirective(malicious),null);
  assert.equal(accessed,0);
 });
+
+test('MFA cookie TTL uses the remaining grant lifetime after network delay',async()=>{
+ for(const [elapsed,expected] of [[2500,7],[9001,null],[10000,null],[-1,null]]){
+  state.grant={token,expiresAt:now+10000};state.sealed=0;
+  let calls=0;
+  const result=await prepareAdminMfaCookie(token,'123456',undefined,()=>now+(calls++===0?0:elapsed));
+  assert.equal(result?.maxAgeSeconds??null,expected);
+  assert.equal(state.sealed,expected===null?0:1);
+ }
+});
