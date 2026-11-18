@@ -12,17 +12,20 @@ import {ADMIN_SESSION_COOKIE,sealAdminSession} from './admin-session.server';
  * SameSite=Strict, Path=/ and no Domain. Never return the bearer to a client.
  */
 export async function prepareAdminMfaCookie(
- accountSessionToken:unknown,totpCode:unknown,now=Date.now(),
+ accountSessionToken:unknown,totpCode:unknown,now?:number,clock:()=>number=Date.now,
 ):Promise<{sealedValue:string;maxAgeSeconds:number}|null>{
- if(!Number.isSafeInteger(now)||now<0)return null;
- const grant=await exchangeTrustedAdminMfa(accountSessionToken,totpCode,now);
+ const startedAt=now??clock();
+ if(!Number.isSafeInteger(startedAt)||startedAt<0)return null;
+ const grant=await exchangeTrustedAdminMfa(accountSessionToken,totpCode,startedAt);
  if(!grant)return null;
  try{
-  // Round down: never advertise a cookie TTL longer than the backend grant.
-  const maxAgeSeconds=Math.floor((grant.expiresAt-now)/1000);
-  if(grant.expiresAt<=now||grant.expiresAt>now+900_000||
+  const receivedAt=now??clock();
+  if(!Number.isSafeInteger(receivedAt)||receivedAt<startedAt)return null;
+  // Round down remaining time after the network exchange.
+  const maxAgeSeconds=Math.floor((grant.expiresAt-receivedAt)/1000);
+  if(grant.expiresAt<=receivedAt||grant.expiresAt>startedAt+900_000||
      maxAgeSeconds<1||maxAgeSeconds>900)return null;
-  const sealedValue=sealAdminSession(grant.token,grant.expiresAt,now);
+  const sealedValue=sealAdminSession(grant.token,grant.expiresAt,receivedAt);
   return {sealedValue,maxAgeSeconds};
  }catch{return null;}
 }
