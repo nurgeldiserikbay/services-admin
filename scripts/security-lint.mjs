@@ -21,19 +21,39 @@ function scan(dir){
     };
     const forbiddenSink=(node)=>ts.isPropertyAccessExpression(node)&&['innerHTML','outerHTML'].includes(node.name.text)||
       ts.isElementAccessExpression(node)&&ts.isStringLiteral(node.argumentExpression)&&['innerHTML','outerHTML'].includes(node.argumentExpression.text);
+    const dynamicPropertyName=node=>{
+      if(ts.isPropertyAccessExpression(node))return node.name.text;
+      if(ts.isElementAccessExpression(node)&&ts.isStringLiteralLike(node.argumentExpression))
+        return node.argumentExpression.text;
+      return null;
+    };
+    const isBrowserGlobal=node=>ts.isIdentifier(node)&&
+      ['globalThis','window','self'].includes(node.text);
     function visit(node){
       if(ts.isCallExpression(node)){
         if(ts.isIdentifier(node.expression)&&node.expression.text==='eval')report(node,'eval is forbidden');
         if(ts.isPropertyAccessExpression(node.expression)&&node.expression.name.text==='eval')report(node,'indirect eval is forbidden');
         if(ts.isElementAccessExpression(node.expression)&&ts.isStringLiteral(node.expression.argumentExpression)&&node.expression.argumentExpression.text==='eval')report(node,'indirect eval is forbidden');
         if(ts.isIdentifier(node.expression)&&node.expression.text==='Function')report(node,'Function constructor is forbidden');
+        if((dynamicPropertyName(node.expression)==='Function')&&
+          isBrowserGlobal(node.expression.expression))report(node,'global Function constructor is forbidden');
+        if(['setTimeout','setInterval'].includes(dynamicPropertyName(node.expression))&&
+          isBrowserGlobal(node.expression.expression)&&node.arguments.length>0&&
+          ts.isStringLiteralLike(node.arguments[0]))
+          report(node,'global string-based timer execution is forbidden');
         if(ts.isIdentifier(node.expression)&&['setTimeout','setInterval'].includes(node.expression.text)&&node.arguments.length>0&&ts.isStringLiteralLike(node.arguments[0]))report(node,'string-based timer execution is forbidden');
         if(ts.isPropertyAccessExpression(node.expression)&&node.expression.name.text==='insertAdjacentHTML')report(node,'insertAdjacentHTML is forbidden');
         if(ts.isElementAccessExpression(node.expression)&&ts.isStringLiteral(node.expression.argumentExpression)&&node.expression.argumentExpression.text==='insertAdjacentHTML')report(node,'insertAdjacentHTML is forbidden');
         if(ts.isPropertyAccessExpression(node.expression)&&node.expression.name.text==='write'&&ts.isIdentifier(node.expression.expression)&&node.expression.expression.text==='document')report(node,'document.write is forbidden');
       }
       if(ts.isJsxAttribute(node)&&node.name.text==='dangerouslySetInnerHTML')report(node,'dangerouslySetInnerHTML is forbidden');
-      if(ts.isNewExpression(node)&&ts.isIdentifier(node.expression)&&node.expression.text==='Function')report(node,'Function constructor is forbidden');
+      if(ts.isNewExpression(node)){
+        if(ts.isIdentifier(node.expression)&&node.expression.text==='Function')
+          report(node,'Function constructor is forbidden');
+        if(dynamicPropertyName(node.expression)==='Function'&&
+          isBrowserGlobal(node.expression.expression))
+          report(node,'global Function constructor is forbidden');
+      }
       if(forbiddenSink(node))report(node,'unsafe HTML DOM sink is forbidden');
       ts.forEachChild(node,visit);
     }
